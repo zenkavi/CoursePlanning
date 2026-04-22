@@ -1,0 +1,16 @@
+junior_faculty_hard_cap: 2.0
+senior_faculty_soft_cap: 2.0
+junior_new_lab_preps_per_year_max: 1
+new_prep_bonus_count: 2           # first N times a faculty teaches a course counts as 2.0
+new_prep_weight: 2.0
+foundational_experienced_weight: 1.67
+extra_section_weight_multiplier: 0.5   # 2nd+ sections of same course in same semester
+target_annual_load: 4.0
+
+objective_weights:
+  section_coverage: 1000
+  junior_new_preps: 100
+  load_balance: 50
+  senior_over_cap: 75
+  sci10_flavor_diversity: 10
+  senior_takes_new_preps: 25

@@ -1,0 +1,96 @@
+courses:
+  - code: sci10
+    display_name: "SCI 10"
+    category: foundational
+    sections_per_semester:
+      fall: 8
+      spring: 8
+    flavors: [health, neuro, earth]
+
+  - code: sci30a
+    display_name: "SCI 30A"
+    category: foundational
+    sections_per_semester:
+      fall: 1
+      spring: 3
+
+  - code: sci30b
+    display_name: "SCI 30B"
+    category: foundational
+    sections_per_semester:
+      fall: 1
+      spring: 3
+
+  - code: sci31a
+    display_name: "SCI 31A"
+    category: foundational
+    sections_per_semester:
+      fall: 3
+      spring: 1
+
+  - code: sci31b
+    display_name: "SCI 31B"
+    category: foundational
+    sections_per_semester:
+      fall: 3
+      spring: 1
+
+  - code: sci40
+    display_name: "SCI 40"
+    category: foundational
+    sections_per_semester:
+      fall: 2
+      spring: 2
+
+  - code: sci50
+    display_name: "SCI 50"
+    category: foundational
+    sections_per_semester:
+      fall: 2
+      spring: 2
+
+  - code: sci111
+    display_name: "SCI 111"
+    category: upper_div_lecture_lab
+    sections_per_semester:
+      fall: 1
+      spring: 1
+
+  - code: sci112
+    display_name: "SCI 112"
+    category: upper_div_lecture_lab
+    sections_per_semester:
+      fall: 1
+      spring: 1
+
+  - code: udl_lab_1
+    display_name: "Upper Div Lab 1"
+    category: upper_div_lecture_lab
+    is_placeholder: true
+    sections_per_semester:
+      fall: 1
+      spring: 1
+
+  - code: udl_lab_2
+    display_name: "Upper Div Lab 2"
+    category: upper_div_lecture_lab
+    is_placeholder: true
+    sections_per_semester:
+      fall: 1
+      spring: 1
+
+  - code: udl_lec_1
+    display_name: "Upper Div Lec 1"
+    category: upper_div_lecture
+    is_placeholder: true
+    sections_per_semester:
+      fall: 1
+      spring: 1
+
+  - code: udl_lec_2
+    display_name: "Upper Div Lec 2"
+    category: upper_div_lecture
+    is_placeholder: true
+    sections_per_semester:
+      fall: 1
+      spring: 1
