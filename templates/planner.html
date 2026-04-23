@@ -85,45 +85,44 @@
         {% for group in sem.groups %}
         {% set course = group.course %}
         {% set is_placeholder = course.is_placeholder %}
-        {% set cat_card = "border-2 border-dashed border-slate-300 bg-slate-50" if is_placeholder else (CAT_STYLE.get(course.category, "bg-white border-slate-200") ~ " border") %}
 
-        {# Course label row (only shown if >1 section in group) #}
-        {% if group.sections|length > 1 %}
-        <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mt-1.5 mb-0.5 px-0.5">
-          {{ course.display_name }}
-        </div>
-        {% endif %}
-
-        {% for slot in group.sections %}
-        <div class="rounded {{ cat_card }} px-2 py-1.5 mb-0.5 flex flex-col gap-0.5 cursor-default">
-
-          {# Card top row: name + badge #}
-          <div class="flex items-center justify-between gap-1">
-            <span class="font-medium text-slate-700 text-xs truncate">
-              {{ course.display_name }}
-              {% if group.sections|length > 1 %}<span class="text-slate-400">#{{ slot.section_number }}</span>{% endif %}
-            </span>
-            {% if is_placeholder %}
-            <span class="text-[9px] px-1 rounded bg-slate-200 text-slate-500 shrink-0">manual</span>
-            {% else %}
-            <span class="text-[9px] px-1 rounded shrink-0 {{ CAT_BADGE.get(course.category, '') }}">
-              {{ CAT_LABEL.get(course.category, '') }}
-            </span>
-            {% endif %}
-          </div>
-
-          {# Assignment or empty #}
-          {% if slot.assignment %}
-          <div class="text-xs text-slate-600 flex items-center gap-1">
-            <span>{{ slot.assignment.faculty_name }}</span>
-            {% if slot.assignment.locked %}
-            <span class="text-[9px] text-amber-600">🔒</span>
-            {% endif %}
-          </div>
+        {# ── Course group header (always shown — acts as separator) ── #}
+        <div class="flex items-center justify-between {% if not loop.first %}mt-2{% endif %} mb-0.5 px-0.5">
+          <span class="text-[10px] font-semibold uppercase tracking-wide
+            {% if is_placeholder %}text-slate-400{% else %}text-slate-500{% endif %}">
+            {{ course.display_name }}
+          </span>
+          {% if is_placeholder %}
+          <span class="text-[9px] px-1 rounded bg-slate-200 text-slate-400">manual</span>
           {% else %}
-          <div class="text-[10px] text-slate-300 italic">Unassigned</div>
+          <span class="text-[9px] px-1 rounded {{ CAT_BADGE.get(course.category, '') }}">
+            {{ CAT_LABEL.get(course.category, '') }}
+          </span>
           {% endif %}
+        </div>
 
+        {# ── Section cards ── #}
+        {% for slot in group.sections %}
+        {% if is_placeholder %}
+        <div class="rounded border-2 border-dashed border-slate-300 bg-slate-50 px-2 py-1 mb-0.5 flex items-center justify-between cursor-default">
+        {% else %}
+        <div class="rounded border-l-2 border border-slate-200 bg-white px-2 py-1 mb-0.5 flex items-center justify-between cursor-default
+          {% if course.category == 'foundational' %}border-l-indigo-300
+          {% elif course.category == 'upper_div_lecture_lab' %}border-l-purple-300
+          {% elif course.category == 'upper_div_lecture' %}border-l-amber-300
+          {% else %}border-l-teal-300{% endif %}">
+        {% endif %}
+          <span class="text-[10px] text-slate-400 w-4 shrink-0">
+            {% if group.sections|length > 1 %}{{ slot.section_number }}{% endif %}
+          </span>
+          {% if slot.assignment %}
+          <span class="flex-1 text-xs text-slate-600 truncate">{{ slot.assignment.faculty_name }}</span>
+          {% if slot.assignment.locked %}
+          <span class="text-[9px] text-amber-500 ml-1">🔒</span>
+          {% endif %}
+          {% else %}
+          <span class="flex-1 text-[10px] text-slate-300 italic">Unassigned</span>
+          {% endif %}
         </div>
         {% endfor %} {# slot #}
         {% endfor %} {# group #}
