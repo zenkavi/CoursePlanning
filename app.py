@@ -84,11 +84,41 @@ def index():
     for fname, sems in loads.items():
         for (y, sem), data in sems.items():
             loads_by_sem.setdefault(f"{y}__{sem}", {})[fname] = data
+
+    # Annual totals with status: {faculty_name: {year: {total, status}}}
+    annual_loads = {}
+    faculty_by_name_map = {f.name: f for f in faculty_list}
+    for fname, sems in loads.items():
+        f = faculty_by_name_map.get(fname)
+        annual_loads[fname] = {}
+        for year in range(1, 4):
+            total = round(
+                sems.get((year, "fall"), {}).get("total", 0.0)
+                + sems.get((year, "spring"), {}).get("total", 0.0),
+                4,
+            )
+            target = cfg.get("target_annual_load", 4.0)
+            hard_cap = cfg.get("junior_faculty_hard_cap", 2.0) * 2
+            soft_cap = cfg.get("senior_faculty_soft_cap", 2.0) * 2
+            cap = hard_cap if (f and f.is_junior()) else soft_cap
+            if total > cap + 1.0:
+                status = "red"
+            elif total > cap:
+                status = "yellow-over"
+            elif total >= target - 0.5:
+                status = "green"
+            elif total > 0:
+                status = "yellow-under"
+            else:
+                status = "empty"
+            annual_loads[fname][year] = {"total": total, "status": status}
+
     return render_template(
         "planner.html",
         semesters=semesters,
         faculty_list=faculty_list,
         loads_by_sem=loads_by_sem,
+        annual_loads=annual_loads,
         cfg=cfg,
     )
 

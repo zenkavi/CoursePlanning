@@ -1,6 +1,6 @@
 # CMC Course Planner — Build Progress
 
-## Status: Step 4 of 11 complete (manual assignment UI)
+## Status: Step 5 of 11 complete (live load display)
 
 ---
 
@@ -49,15 +49,16 @@
 - `sci10` flavor auto-assigned to first qualified flavor on assignment
 - **Bug fix:** placeholder courses (`udl_lab_*`, `udl_lec_*`) had no CSV qualification columns, so all faculty appeared unqualified; fixed by bypassing `can_teach` check for `is_placeholder` courses in both `/assign` and the dropdown template
 
+### Step 5 — Live Load Display
+**Files:** `app.py`, `templates/planner.html`
+
+- `index()` computes `annual_loads`: `{faculty_name: {year: {total, status}}}` — annual totals per year with colour status (green near target 4.0, yellow-under/over, red over cap+1.0); junior/senior cap-aware
+- Faculty sidebar rows expanded to 2 lines: name/rank/area on top, three annual load badges (Y1/Y2/Y3) below, colour-coded; tooltip shows exact value
+- Assigned section cards (both locked and interactive) show the faculty's total semester load as a small coloured badge (`green`/`amber`/`red`) next to their name — updates on every page load after each assignment
+
 ---
 
 ## Up Next
-
-### Step 5 — Live Load Display
-Per-faculty, per-semester load badges update as assignments change.
-- Colour-coded badges on faculty sidebar (green/yellow/red)
-- Load shown on assigned section cards
-- Annual load shown in faculty sidebar
 
 ### Step 6 — Constraint Validator
 Real-time warnings surfaced in the UI without blocking assignment.

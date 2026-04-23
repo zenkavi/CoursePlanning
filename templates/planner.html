@@ -73,14 +73,33 @@ async function doUnassign(slotId) {
   <aside class="w-52 shrink-0 border-r border-slate-200 bg-white overflow-y-auto scrollbar-thin">
     <div class="px-3 py-2 border-b border-slate-100 font-semibold text-slate-600 text-xs uppercase tracking-wider">Faculty</div>
     {% for f in faculty_list %}
+    {% set fa = annual_loads.get(f.name, {}) %}
     <a href="/faculty/{{ f.name | urlencode }}"
-       class="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-50 border-b border-slate-50">
-      <span class="shrink-0 w-4 h-4 rounded-full text-[10px] font-bold flex items-center justify-center
-        {% if f.is_junior() %}bg-sky-100 text-sky-700{% else %}bg-slate-200 text-slate-600{% endif %}">
-        {{ "J" if f.is_junior() else "S" }}
-      </span>
-      <span class="truncate text-slate-700 text-xs">{{ f.name }}</span>
-      <span class="ml-auto shrink-0 text-[10px] text-slate-400">{{ f.area[:3] }}</span>
+       class="block px-3 py-1.5 hover:bg-slate-50 border-b border-slate-50">
+      <div class="flex items-center gap-2">
+        <span class="shrink-0 w-4 h-4 rounded-full text-[10px] font-bold flex items-center justify-center
+          {% if f.is_junior() %}bg-sky-100 text-sky-700{% else %}bg-slate-200 text-slate-600{% endif %}">
+          {{ "J" if f.is_junior() else "S" }}
+        </span>
+        <span class="truncate text-slate-700 text-xs flex-1">{{ f.name }}</span>
+        <span class="shrink-0 text-[10px] text-slate-400">{{ f.area[:3] }}</span>
+      </div>
+      <div class="flex gap-1 mt-0.5 ml-6">
+        {% for yr in [1, 2, 3] %}
+        {% set yd = fa.get(yr, {}) %}
+        {% set yt = yd.get('total', 0) %}
+        {% set ys = yd.get('status', 'empty') %}
+        <span title="Year {{ yr }} annual load: {{ '%.2f'|format(yt) }}"
+              class="text-[9px] font-mono px-1 rounded
+          {% if ys == 'green' %}bg-green-100 text-green-700
+          {% elif ys == 'yellow-over' %}bg-yellow-100 text-yellow-700
+          {% elif ys == 'yellow-under' %}bg-slate-100 text-slate-500
+          {% elif ys == 'red' %}bg-red-100 text-red-700
+          {% else %}text-slate-300{% endif %}">
+          Y{{ yr }}:{% if yt > 0 %}{{ "%.1f"|format(yt) }}{% else %}—{% endif %}
+        </span>
+        {% endfor %}
+      </div>
     </a>
     {% endfor %}
   </aside>
@@ -131,14 +150,22 @@ async function doUnassign(slotId) {
 
         {% if slot.assignment and slot.assignment.locked %}
         {# ── Locked: static display ── #}
+        {% set cl = f_loads.get(slot.assignment.faculty_name, {}) %}
         {% if is_placeholder %}
-        <div class="rounded border-2 border-dashed border-amber-200 bg-amber-50 px-2 py-1 mb-0.5 flex items-center justify-between">
+        <div class="rounded border-2 border-dashed border-amber-200 bg-amber-50 px-2 py-1 mb-0.5 flex items-center gap-1">
         {% else %}
-        <div class="rounded border-l-2 border border-slate-200 bg-white px-2 py-1 mb-0.5 flex items-center justify-between {{ CAT_BORDER.get(course.category, '') }}">
+        <div class="rounded border-l-2 border border-slate-200 bg-white px-2 py-1 mb-0.5 flex items-center gap-1 {{ CAT_BORDER.get(course.category, '') }}">
         {% endif %}
           <span class="text-[10px] text-slate-400 w-4 shrink-0">{% if group.sections|length > 1 %}{{ slot.section_number }}{% endif %}</span>
-          <span class="flex-1 text-xs text-slate-600 truncate">{{ slot.assignment.faculty_name }}</span>
-          <span class="text-[9px] text-amber-500 ml-1">🔒</span>
+          <span class="flex-1 text-xs text-slate-600 truncate min-w-0">{{ slot.assignment.faculty_name }}</span>
+          <span class="shrink-0 text-[9px] font-mono
+            {% if cl.get('status') == 'red' %}text-red-500
+            {% elif cl.get('status') == 'yellow-over' %}text-amber-500
+            {% elif cl.get('status') == 'green' %}text-green-600
+            {% else %}text-slate-400{% endif %}">
+            {{ "%.2f"|format(cl.get('total', 0)) }}
+          </span>
+          <span class="text-[9px] text-amber-500">🔒</span>
         </div>
 
         {% else %}
@@ -154,7 +181,15 @@ async function doUnassign(slotId) {
           {% endif %}
             <span class="text-[10px] text-slate-400 w-4 shrink-0">{% if group.sections|length > 1 %}{{ slot.section_number }}{% endif %}</span>
             {% if slot.assignment %}
-            <span class="flex-1 text-xs text-slate-600 truncate">{{ slot.assignment.faculty_name }}</span>
+            {% set cl = f_loads.get(slot.assignment.faculty_name, {}) %}
+            <span class="flex-1 text-xs text-slate-600 truncate min-w-0">{{ slot.assignment.faculty_name }}</span>
+            <span class="shrink-0 text-[9px] font-mono ml-1
+              {% if cl.get('status') == 'red' %}text-red-500
+              {% elif cl.get('status') == 'yellow-over' %}text-amber-500
+              {% elif cl.get('status') == 'green' %}text-green-600
+              {% else %}text-slate-400{% endif %}">
+              {{ "%.2f"|format(cl.get('total', 0)) }}
+            </span>
             {% else %}
             <span class="flex-1 text-[10px] text-slate-300 italic">Unassigned</span>
             {% endif %}
