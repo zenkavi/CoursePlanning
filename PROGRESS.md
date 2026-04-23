@@ -1,6 +1,6 @@
 # CMC Course Planner — Build Progress
 
-## Status: Step 3 of 11 complete
+## Status: Step 3 of 11 complete (grid layout polished)
 
 ---
 
@@ -25,13 +25,13 @@
 - Load status colours: green (at target), yellow-under, yellow-over, red
 - 34 load calculator tests passing — **45 total**
 
-### Step 3 — Static Grid Rendering `fbac0da`
+### Step 3 — Static Grid Rendering `fbac0da` + `685a451`
 **Files:** `app.py`, `templates/base.html`, `templates/planner.html`, `templates/diagnostics.html`, `templates/faculty_detail.html`
 
 - Flask app with routes: `GET /`, `GET /diagnostics`, `GET /faculty/<name>`
 - `build_grid()` produces semester → course-group → slot structure for the template
 - 6-column horizontally-scrollable grid, each column 26 sections
-- Section cards colour-coded by category (indigo/purple/amber/dashed)
+- Section cards use a thin left-border accent in the category colour; group headers (course name + category badge) always rendered so every course has a visible separator regardless of section count — this fixed a layout bug where single-section courses (e.g. sci30a in fall) had no visual break
 - Filled/total counter in each column header
 - Faculty sidebar with rank badge (J/S) and area
 - Stub pages for diagnostics and faculty detail
