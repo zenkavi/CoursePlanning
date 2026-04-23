@@ -80,6 +80,7 @@ async function doUnassign(slotId) {
     <div class="px-3 py-2 border-b border-slate-100 font-semibold text-slate-600 text-xs uppercase tracking-wider">Faculty</div>
     {% for f in faculty_list %}
     {% set fa = annual_loads.get(f.name, {}) %}
+    {% set fv = violations.get(f.name, {}) %}
     <a href="/faculty/{{ f.name | urlencode }}"
        @click.prevent='$store.selection.toggle({{ f.name | tojson }})'
        :class='$store.selection.faculty === {{ f.name | tojson }} ? "bg-indigo-50 border-l-2 border-l-indigo-400" : "border-l-2 border-l-transparent"'
@@ -90,6 +91,14 @@ async function doUnassign(slotId) {
           {{ "J" if f.is_junior() else "S" }}
         </span>
         <span class="truncate text-slate-700 text-xs flex-1">{{ f.name }}</span>
+        {% if fv.get('count') %}
+        <span title="{{ fv.get('items', []) | map(attribute='description') | join(' | ') }}"
+              class="shrink-0 text-[9px] font-bold px-1 rounded
+          {% if fv.get('has_error') %}bg-red-100 text-red-600
+          {% else %}bg-amber-100 text-amber-600{% endif %}">
+          {{ fv.get('count') }}
+        </span>
+        {% endif %}
         <span class="shrink-0 text-[10px] text-slate-400">{{ f.area[:3] }}</span>
       </div>
       <div class="flex gap-1 mt-0.5 ml-6">

@@ -1,6 +1,6 @@
 # CMC Course Planner — Build Progress
 
-## Status: Step 5 of 11 complete (live load display)
+## Status: Step 6 of 11 complete (constraint validator)
 
 ---
 
@@ -56,15 +56,16 @@
 - Faculty sidebar rows expanded to 2 lines: name/rank/area on top, three annual load badges (Y1/Y2/Y3) below, colour-coded; tooltip shows exact value
 - Assigned section cards (both locked and interactive) show the faculty's total semester load as a small coloured badge (`green`/`amber`/`red`) next to their name — updates on every page load after each assignment
 
+### Step 6 — Constraint Validator
+**Files:** `app.py`, `templates/planner.html`
+
+- `compute_violations()` checks three rules per faculty: (1) junior semester load > `junior_faculty_hard_cap`, (2) senior semester load > `senior_faculty_soft_cap`, (3) junior faculty with > 1 brand-new lab-category course (`upper_div_lecture_lab` / `upper_div_lab`) in the same academic year
+- Returns `{faculty_name: {items, has_error, has_warning, count}}`; used by `index()` and passed to template
+- Sidebar faculty rows show a coloured count badge (red for hard-cap errors, amber for warnings) with a `title` tooltip listing all violation descriptions
+
 ---
 
 ## Up Next
-
-### Step 6 — Constraint Validator
-Real-time warnings surfaced in the UI without blocking assignment.
-- Junior faculty over 2.0 hard cap → block or warn
-- Junior faculty > 1 new lab prep per year → warn
-- Senior faculty over soft cap → yellow warning
 
 ### Step 7 — Diagnostics Panel v1
 - Coverage % per semester

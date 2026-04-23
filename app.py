@@ -39,6 +39,72 @@ def save_plan(plan: Plan):
         json.dump(plan.to_dict(), f, indent=2)
 
 
+def compute_violations(faculty_list, loads, plan, courses, cfg) -> dict:
+    """Return {faculty_name: {items, has_error, has_warning, count}} for active violations."""
+    lab_cats = {"upper_div_lecture_lab", "upper_div_lab"}
+    junior_cap = cfg.get("junior_faculty_hard_cap", 2.0)
+    senior_cap = cfg.get("senior_faculty_soft_cap", 2.0)
+
+    result = {}
+    for faculty in faculty_list:
+        fname = faculty.name
+        items = []
+
+        # ── Semester load cap violations ──────────────────────────────
+        for (y, sem), data in loads.get(fname, {}).items():
+            total = data.get("total", 0.0)
+            label = f"{'Fall' if sem == 'fall' else 'Spring'} Y{y}"
+            if faculty.is_junior() and total > junior_cap:
+                items.append({
+                    "type": "hard_cap", "severity": "error",
+                    "description": f"{label}: load {total:.2f} exceeds junior hard cap ({junior_cap:.1f})",
+                })
+            elif faculty.is_senior() and total > senior_cap:
+                items.append({
+                    "type": "soft_cap", "severity": "warning",
+                    "description": f"{label}: load {total:.2f} exceeds senior soft cap ({senior_cap:.1f})",
+                })
+
+        # ── Junior: > 1 new lab prep per academic year ────────────────
+        if faculty.is_junior():
+            cumulative = dict(faculty.prior_teaching_counts)
+            for year in range(plan.year_range[0], plan.year_range[1] + 1):
+                year_new_labs = set()
+                for sem in ("fall", "spring"):
+                    sem_assigns = [
+                        a for a in plan.assignments
+                        if a.faculty_name == fname and a.year == year and a.semester == sem
+                    ]
+                    for a in sem_assigns:
+                        course = courses.get(a.course_code)
+                        if course and course.category in lab_cats:
+                            if cumulative.get(a.course_code, 0) == 0:
+                                year_new_labs.add(a.course_code)
+                    for a in sem_assigns:
+                        cumulative[a.course_code] = cumulative.get(a.course_code, 0) + 1
+
+                if len(year_new_labs) > 1:
+                    names = ", ".join(
+                        courses[c].display_name if c in courses else c
+                        for c in sorted(year_new_labs)
+                    )
+                    items.append({
+                        "type": "new_lab_prep", "severity": "warning",
+                        "description": (
+                            f"Y{year}: {len(year_new_labs)} new lab preps ({names})"
+                            f" — max 1/year for junior faculty"
+                        ),
+                    })
+
+        result[fname] = {
+            "items": items,
+            "has_error": any(v["severity"] == "error" for v in items),
+            "has_warning": any(v["severity"] == "warning" for v in items),
+            "count": len(items),
+        }
+    return result
+
+
 def build_grid(plan: Plan, year_range: tuple = (1, 3)) -> list:
     """Return the semester/slot structure the template renders.
 
@@ -113,12 +179,15 @@ def index():
                 status = "empty"
             annual_loads[fname][year] = {"total": total, "status": status}
 
+    violations = compute_violations(faculty_list, loads, plan, courses, cfg)
+
     return render_template(
         "planner.html",
         semesters=semesters,
         faculty_list=faculty_list,
         loads_by_sem=loads_by_sem,
         annual_loads=annual_loads,
+        violations=violations,
         cfg=cfg,
     )
 
