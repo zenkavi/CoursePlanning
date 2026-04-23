@@ -203,7 +203,7 @@ async function doUnassign(slotId) {
 
             {% if slot.assignment %}
             <button class="w-full text-left px-3 py-1.5 text-red-600 hover:bg-red-50 border-b border-slate-100"
-                    @click="doUnassign({{ slot.slot_id | tojson }})">
+                    @click='doUnassign({{ slot.slot_id | tojson }})'>
               Unassign {{ slot.assignment.faculty_name }}
             </button>
             {% endif %}
@@ -220,7 +220,7 @@ async function doUnassign(slotId) {
             {% set shown_available.n = shown_available.n + 1 %}
             <button class="w-full text-left px-3 py-1.5 hover:bg-slate-50 flex justify-between items-center
                      {% if slot.assignment and slot.assignment.faculty_name == f.name %}bg-indigo-50{% endif %}"
-                    @click="doAssign({{ slot.slot_id | tojson }}, {{ f.name | tojson }})">
+                    @click='doAssign({{ slot.slot_id | tojson }}, {{ f.name | tojson }})'>
               <span class="truncate mr-1">{{ f.name }}</span>
               <span class="shrink-0 font-mono text-[10px]
                 {% if fs == 'red' %}text-red-500
