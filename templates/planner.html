@@ -10,6 +10,12 @@
 
 {# ── JS helpers ──────────────────────────────────────────────────────── #}
 <script>
+document.addEventListener('alpine:init', () => {
+  Alpine.store('selection', {
+    faculty: null,
+    toggle(name) { this.faculty = this.faculty === name ? null : name; }
+  });
+});
 function slotDropdown() {
   return {
     open: false,
@@ -67,7 +73,7 @@ async function doUnassign(slotId) {
   "upper_div_lab":         "border-l-teal-300",
 } %}
 
-<div class="flex" style="height: calc(100vh - 45px);">
+<div x-data="{}" class="flex" style="height: calc(100vh - 45px);">
 
   {# ══ Faculty sidebar ════════════════════════════════════════════════════ #}
   <aside class="w-52 shrink-0 border-r border-slate-200 bg-white overflow-y-auto scrollbar-thin">
@@ -75,7 +81,9 @@ async function doUnassign(slotId) {
     {% for f in faculty_list %}
     {% set fa = annual_loads.get(f.name, {}) %}
     <a href="/faculty/{{ f.name | urlencode }}"
-       class="block px-3 py-1.5 hover:bg-slate-50 border-b border-slate-50">
+       @click.prevent='$store.selection.toggle({{ f.name | tojson }})'
+       :class='$store.selection.faculty === {{ f.name | tojson }} ? "bg-indigo-50 border-l-2 border-l-indigo-400" : "border-l-2 border-l-transparent"'
+       class="block px-3 py-1.5 hover:bg-slate-50 border-b border-slate-50 cursor-pointer">
       <div class="flex items-center gap-2">
         <span class="shrink-0 w-4 h-4 rounded-full text-[10px] font-bold flex items-center justify-center
           {% if f.is_junior() %}bg-sky-100 text-sky-700{% else %}bg-slate-200 text-slate-600{% endif %}">
@@ -152,9 +160,13 @@ async function doUnassign(slotId) {
         {# ── Locked: static display ── #}
         {% set cl = f_loads.get(slot.assignment.faculty_name, {}) %}
         {% if is_placeholder %}
-        <div class="rounded border-2 border-dashed border-amber-200 bg-amber-50 px-2 py-1 mb-0.5 flex items-center gap-1">
+        <div data-faculty="{{ slot.assignment.faculty_name }}"
+             :class="$store.selection.faculty && $store.selection.faculty === $el.dataset.faculty ? 'ring-2 ring-inset ring-indigo-400' : ''"
+             class="rounded border-2 border-dashed border-amber-200 bg-amber-50 px-2 py-1 mb-0.5 flex items-center gap-1">
         {% else %}
-        <div class="rounded border-l-2 border border-slate-200 bg-white px-2 py-1 mb-0.5 flex items-center gap-1 {{ CAT_BORDER.get(course.category, '') }}">
+        <div data-faculty="{{ slot.assignment.faculty_name }}"
+             :class="$store.selection.faculty && $store.selection.faculty === $el.dataset.faculty ? 'ring-2 ring-inset ring-indigo-400' : ''"
+             class="rounded border-l-2 border border-slate-200 bg-white px-2 py-1 mb-0.5 flex items-center gap-1 {{ CAT_BORDER.get(course.category, '') }}">
         {% endif %}
           <span class="text-[10px] text-slate-400 w-4 shrink-0">{% if group.sections|length > 1 %}{{ slot.section_number }}{% endif %}</span>
           <span class="flex-1 text-xs text-slate-600 truncate min-w-0">{{ slot.assignment.faculty_name }}</span>
@@ -174,9 +186,13 @@ async function doUnassign(slotId) {
 
           {% if is_placeholder %}
           <div @click="toggle($el)"
+               data-faculty="{{ slot.assignment.faculty_name if slot.assignment else '' }}"
+               :class="$store.selection.faculty && $store.selection.faculty === $el.dataset.faculty ? 'ring-2 ring-inset ring-indigo-400' : ''"
                class="rounded border-2 border-dashed border-slate-300 bg-slate-50 px-2 py-1 flex items-center justify-between cursor-pointer hover:bg-slate-100">
           {% else %}
           <div @click="toggle($el)"
+               data-faculty="{{ slot.assignment.faculty_name if slot.assignment else '' }}"
+               :class="$store.selection.faculty && $store.selection.faculty === $el.dataset.faculty ? 'ring-2 ring-inset ring-indigo-400' : ''"
                class="rounded border-l-2 border border-slate-200 bg-white px-2 py-1 flex items-center justify-between cursor-pointer hover:bg-slate-50 {{ CAT_BORDER.get(course.category, '') }}">
           {% endif %}
             <span class="text-[10px] text-slate-400 w-4 shrink-0">{% if group.sections|length > 1 %}{{ slot.section_number }}{% endif %}</span>
