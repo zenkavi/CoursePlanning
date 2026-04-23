@@ -2,12 +2,12 @@ import json
 import os
 from itertools import groupby
 
-from flask import Flask, render_template
+from flask import Flask, jsonify, redirect, render_template, request, url_for
 
 from config import load_config
 from data_loader import load_courses, load_faculty
 from load_calc import all_faculty_loads
-from models import Plan
+from models import Assignment, Plan
 
 app = Flask(__name__)
 
@@ -79,13 +79,87 @@ def index():
     plan = load_plan()
     semesters = build_grid(plan)
     loads = all_faculty_loads(faculty_list, plan.assignments, courses, cfg)
+    # Flatten loads for Jinja: "year__season" -> {faculty_name: {total, status, ...}}
+    loads_by_sem = {}
+    for fname, sems in loads.items():
+        for (y, sem), data in sems.items():
+            loads_by_sem.setdefault(f"{y}__{sem}", {})[fname] = data
     return render_template(
         "planner.html",
         semesters=semesters,
         faculty_list=faculty_list,
-        loads=loads,
+        loads_by_sem=loads_by_sem,
         cfg=cfg,
     )
+
+
+@app.route("/assign", methods=["POST"])
+def assign():
+    data = request.get_json()
+    slot_id = data.get("slot_id", "")
+    faculty_name = data.get("faculty_name", "")
+
+    parts = slot_id.split("__")
+    if len(parts) != 4:
+        return jsonify({"error": "Invalid slot_id"}), 400
+
+    course_code, year, season, section = parts[0], int(parts[1]), parts[2], int(parts[3])
+
+    plan = load_plan()
+    existing = plan.get_assignment(course_code, year, season, section)
+    if existing and existing.locked:
+        return jsonify({"error": "Assignment is locked"}), 403
+
+    faculty = next((f for f in faculty_list if f.name == faculty_name), None)
+    if faculty is None:
+        return jsonify({"error": "Unknown faculty"}), 400
+
+    course = courses.get(course_code)
+    if course is None:
+        return jsonify({"error": "Unknown course"}), 400
+    if not course.is_placeholder and not faculty.can_teach_course(course_code):
+        return jsonify({"error": "Faculty not qualified for this course"}), 400
+
+    flavor = None
+    if course_code == "sci10":
+        for fl in ("health", "neuro", "earth"):
+            if faculty.can_teach.get(f"sci10_{fl}"):
+                flavor = fl
+                break
+
+    plan.set_assignment(Assignment(
+        faculty_name=faculty_name,
+        course_code=course_code,
+        year=year,
+        semester=season,
+        section_number=section,
+        locked=False,
+        manual=True,
+        flavor=flavor,
+    ))
+    save_plan(plan)
+    return jsonify({"ok": True})
+
+
+@app.route("/unassign", methods=["POST"])
+def unassign():
+    data = request.get_json()
+    slot_id = data.get("slot_id", "")
+
+    parts = slot_id.split("__")
+    if len(parts) != 4:
+        return jsonify({"error": "Invalid slot_id"}), 400
+
+    course_code, year, season, section = parts[0], int(parts[1]), parts[2], int(parts[3])
+
+    plan = load_plan()
+    existing = plan.get_assignment(course_code, year, season, section)
+    if existing and existing.locked:
+        return jsonify({"error": "Assignment is locked"}), 403
+
+    plan.remove_assignment(course_code, year, season, section)
+    save_plan(plan)
+    return jsonify({"ok": True})
 
 
 @app.route("/diagnostics")

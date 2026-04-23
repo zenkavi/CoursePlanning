@@ -1,6 +1,6 @@
 # CMC Course Planner — Build Progress
 
-## Status: Step 3 of 11 complete (grid layout polished)
+## Status: Step 4 of 11 complete (manual assignment UI)
 
 ---
 
@@ -37,15 +37,21 @@
 - Stub pages for diagnostics and faculty detail
 - All routes return 200; plan stored in `data/plan.json` (auto-created)
 
+### Step 4 — Manual Assignment UI
+**Files:** `app.py`, `templates/planner.html`
+
+- `POST /assign`: parses slot_id, validates faculty qualification, rejects locked assignments; sets `sci10` flavor from first matching faculty qualification
+- `POST /unassign`: removes non-locked assignments; returns 403 for locked slots
+- `index()` now passes `loads_by_sem` (string-keyed `"year__season" → {name → {total, status}}`) for dropdown load display
+- Each slot card wrapped in `x-data="slotDropdown()"` Alpine component; dropdown uses `position:fixed` to escape `overflow-y:auto` clipping
+- Dropdown groups: available qualified faculty (clickable with colour-coded load), junior-at-hard-cap (greyed/disabled), unqualified (greyed/disabled)
+- Locked cards render as static display with 🔒 badge (no dropdown)
+- `sci10` flavor auto-assigned to first qualified flavor on assignment
+- **Bug fix:** placeholder courses (`udl_lab_*`, `udl_lec_*`) had no CSV qualification columns, so all faculty appeared unqualified; fixed by bypassing `can_teach` check for `is_placeholder` courses in both `/assign` and the dropdown template
+
 ---
 
 ## Up Next
-
-### Step 4 — Manual Assignment UI
-Click a section card → dropdown of qualified faculty → POST `/assign` → card updates.
-- Placeholder (upper-div) cards should also be assignable
-- Faculty in dropdown greyed if unqualified or over cap
-- Requires Alpine.js dropdown component and `/assign` + `/unassign` Flask routes
 
 ### Step 5 — Live Load Display
 Per-faculty, per-semester load badges update as assignments change.

@@ -7,13 +7,47 @@
 {% endblock %}
 
 {% block content %}
-{# ── Category colour helpers (used in macros below) ─────────────────── #}
-{% set CAT_STYLE = {
-  "foundational":          "bg-indigo-50 border-indigo-200",
-  "upper_div_lecture_lab": "bg-purple-50 border-purple-200",
-  "upper_div_lecture":     "bg-amber-50  border-amber-200",
-  "upper_div_lab":         "bg-teal-50   border-teal-200",
-} %}
+
+{# ── JS helpers ──────────────────────────────────────────────────────── #}
+<script>
+function slotDropdown() {
+  return {
+    open: false,
+    dropX: 0,
+    dropY: 0,
+    toggle(el) {
+      if (this.open) { this.open = false; return; }
+      const r = el.getBoundingClientRect();
+      const w = 208;
+      this.dropX = Math.min(r.left, window.innerWidth - w - 8);
+      this.dropY = r.bottom + 2;
+      this.open = true;
+    }
+  };
+}
+async function doAssign(slotId, facultyName) {
+  const res = await fetch('/assign', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({slot_id: slotId, faculty_name: facultyName})
+  });
+  const d = await res.json();
+  if (d.ok) location.reload();
+  else alert(d.error || 'Assignment failed');
+}
+async function doUnassign(slotId) {
+  const res = await fetch('/unassign', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({slot_id: slotId})
+  });
+  const d = await res.json();
+  if (d.ok) location.reload();
+  else alert(d.error || 'Unassign failed');
+}
+</script>
+
+{# ── Category colour helpers ─────────────────────────────────────────── #}
 {% set CAT_BADGE = {
   "foundational":          "bg-indigo-100 text-indigo-700",
   "upper_div_lecture_lab": "bg-purple-100 text-purple-700",
@@ -26,23 +60,12 @@
   "upper_div_lecture":     "UDiv Lec",
   "upper_div_lab":         "UDiv Lab",
 } %}
-
-{# ── Load badge colour ───────────────────────────────────────────────── #}
-{% macro load_badge(status, total) %}
-{% if total == 0 %}
-  <span class="text-slate-300 text-xs">—</span>
-{% elif status == "green" %}
-  <span class="text-xs font-mono px-1.5 py-0.5 rounded bg-green-100 text-green-700">{{ "%.2f"|format(total) }}</span>
-{% elif status == "yellow-over" %}
-  <span class="text-xs font-mono px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-700">{{ "%.2f"|format(total) }}</span>
-{% elif status == "yellow-under" %}
-  <span class="text-xs font-mono px-1.5 py-0.5 rounded bg-yellow-50 text-yellow-600">{{ "%.2f"|format(total) }}</span>
-{% elif status == "red" %}
-  <span class="text-xs font-mono px-1.5 py-0.5 rounded bg-red-100 text-red-700">{{ "%.2f"|format(total) }}</span>
-{% else %}
-  <span class="text-xs font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">{{ "%.2f"|format(total) }}</span>
-{% endif %}
-{% endmacro %}
+{% set CAT_BORDER = {
+  "foundational":          "border-l-indigo-300",
+  "upper_div_lecture_lab": "border-l-purple-300",
+  "upper_div_lecture":     "border-l-amber-300",
+  "upper_div_lab":         "border-l-teal-300",
+} %}
 
 <div class="flex" style="height: calc(100vh - 45px);">
 
@@ -67,6 +90,8 @@
     <div class="flex gap-2" style="width: max-content; align-items: flex-start;">
 
       {% for sem in semesters %}
+      {% set sem_key = sem.year | string ~ "__" ~ sem.season %}
+      {% set f_loads = loads_by_sem.get(sem_key, {}) %}
       <div class="w-44 shrink-0 flex flex-col">
 
         {# Column header #}
@@ -86,7 +111,7 @@
         {% set course = group.course %}
         {% set is_placeholder = course.is_placeholder %}
 
-        {# ── Course group header (always shown — acts as separator) ── #}
+        {# ── Course group header ── #}
         <div class="flex items-center justify-between {% if not loop.first %}mt-2{% endif %} mb-0.5 px-0.5">
           <span class="text-[10px] font-semibold uppercase tracking-wide
             {% if is_placeholder %}text-slate-400{% else %}text-slate-500{% endif %}">
@@ -103,32 +128,119 @@
 
         {# ── Section cards ── #}
         {% for slot in group.sections %}
+
+        {% if slot.assignment and slot.assignment.locked %}
+        {# ── Locked: static display ── #}
         {% if is_placeholder %}
-        <div class="rounded border-2 border-dashed border-slate-300 bg-slate-50 px-2 py-1 mb-0.5 flex items-center justify-between cursor-default">
+        <div class="rounded border-2 border-dashed border-amber-200 bg-amber-50 px-2 py-1 mb-0.5 flex items-center justify-between">
         {% else %}
-        <div class="rounded border-l-2 border border-slate-200 bg-white px-2 py-1 mb-0.5 flex items-center justify-between cursor-default
-          {% if course.category == 'foundational' %}border-l-indigo-300
-          {% elif course.category == 'upper_div_lecture_lab' %}border-l-purple-300
-          {% elif course.category == 'upper_div_lecture' %}border-l-amber-300
-          {% else %}border-l-teal-300{% endif %}">
+        <div class="rounded border-l-2 border border-slate-200 bg-white px-2 py-1 mb-0.5 flex items-center justify-between {{ CAT_BORDER.get(course.category, '') }}">
         {% endif %}
-          <span class="text-[10px] text-slate-400 w-4 shrink-0">
-            {% if group.sections|length > 1 %}{{ slot.section_number }}{% endif %}
-          </span>
-          {% if slot.assignment %}
+          <span class="text-[10px] text-slate-400 w-4 shrink-0">{% if group.sections|length > 1 %}{{ slot.section_number }}{% endif %}</span>
           <span class="flex-1 text-xs text-slate-600 truncate">{{ slot.assignment.faculty_name }}</span>
-          {% if slot.assignment.locked %}
           <span class="text-[9px] text-amber-500 ml-1">🔒</span>
-          {% endif %}
-          {% else %}
-          <span class="flex-1 text-[10px] text-slate-300 italic">Unassigned</span>
-          {% endif %}
         </div>
-        {% endfor %} {# slot #}
-        {% endfor %} {# group #}
+
+        {% else %}
+        {# ── Interactive card with dropdown ── #}
+        <div x-data="slotDropdown()" class="relative mb-0.5">
+
+          {% if is_placeholder %}
+          <div @click="toggle($el)"
+               class="rounded border-2 border-dashed border-slate-300 bg-slate-50 px-2 py-1 flex items-center justify-between cursor-pointer hover:bg-slate-100">
+          {% else %}
+          <div @click="toggle($el)"
+               class="rounded border-l-2 border border-slate-200 bg-white px-2 py-1 flex items-center justify-between cursor-pointer hover:bg-slate-50 {{ CAT_BORDER.get(course.category, '') }}">
+          {% endif %}
+            <span class="text-[10px] text-slate-400 w-4 shrink-0">{% if group.sections|length > 1 %}{{ slot.section_number }}{% endif %}</span>
+            {% if slot.assignment %}
+            <span class="flex-1 text-xs text-slate-600 truncate">{{ slot.assignment.faculty_name }}</span>
+            {% else %}
+            <span class="flex-1 text-[10px] text-slate-300 italic">Unassigned</span>
+            {% endif %}
+          </div>
+
+          {# Dropdown panel (fixed-positioned to escape overflow clipping) #}
+          <div x-show="open" x-cloak
+               @click.outside="open = false"
+               :style="'position:fixed;left:'+dropX+'px;top:'+dropY+'px;width:13rem;z-index:100'"
+               class="bg-white border border-slate-200 rounded shadow-lg max-h-64 overflow-y-auto text-xs">
+
+            {% if slot.assignment %}
+            <button class="w-full text-left px-3 py-1.5 text-red-600 hover:bg-red-50 border-b border-slate-100"
+                    @click="doUnassign({{ slot.slot_id | tojson }})">
+              Unassign {{ slot.assignment.faculty_name }}
+            </button>
+            {% endif %}
+
+            {# Qualified faculty — available #}
+            {% set shown_available = namespace(n=0) %}
+            {% for f in faculty_list %}
+            {% set fl = f_loads.get(f.name, {}) %}
+            {% set ft = fl.get('total', 0) %}
+            {% set fs = fl.get('status', 'empty') %}
+            {% set qualified = is_placeholder or f.can_teach_course(course.code) %}
+            {% set at_hard_cap = f.is_junior() and ft >= cfg['junior_faculty_hard_cap'] %}
+            {% if qualified and not at_hard_cap %}
+            {% set shown_available.n = shown_available.n + 1 %}
+            <button class="w-full text-left px-3 py-1.5 hover:bg-slate-50 flex justify-between items-center
+                     {% if slot.assignment and slot.assignment.faculty_name == f.name %}bg-indigo-50{% endif %}"
+                    @click="doAssign({{ slot.slot_id | tojson }}, {{ f.name | tojson }})">
+              <span class="truncate mr-1">{{ f.name }}</span>
+              <span class="shrink-0 font-mono text-[10px]
+                {% if fs == 'red' %}text-red-500
+                {% elif fs == 'yellow-over' %}text-amber-500
+                {% elif fs == 'green' %}text-green-600
+                {% else %}text-slate-400{% endif %}">
+                {{ "%.2f"|format(ft) }}
+              </span>
+            </button>
+            {% endif %}
+            {% endfor %}
+
+            {# Qualified but at hard cap (junior) #}
+            {% set shown_capped = namespace(n=0) %}
+            {% for f in faculty_list %}
+            {% set fl = f_loads.get(f.name, {}) %}
+            {% set ft = fl.get('total', 0) %}
+            {% set qualified = f.can_teach_course(course.code) %}
+            {% set at_hard_cap = f.is_junior() and ft >= cfg['junior_faculty_hard_cap'] %}
+            {% if qualified and at_hard_cap %}
+            {% if shown_capped.n == 0 %}
+            <div class="px-3 py-0.5 text-[9px] text-slate-400 uppercase tracking-wide bg-slate-50 border-t border-slate-100">At cap</div>
+            {% endif %}
+            {% set shown_capped.n = shown_capped.n + 1 %}
+            <div class="w-full px-3 py-1.5 flex justify-between items-center opacity-50 cursor-not-allowed select-none">
+              <span class="truncate mr-1">{{ f.name }}</span>
+              <span class="shrink-0 font-mono text-[10px] text-red-400">{{ "%.2f"|format(ft) }}</span>
+            </div>
+            {% endif %}
+            {% endfor %}
+
+            {# Unqualified faculty (hidden for placeholder courses since all are qualified) #}
+            {% set shown_unq = namespace(n=0) %}
+            {% for f in faculty_list %}
+            {% if not is_placeholder and not f.can_teach_course(course.code) %}
+            {% if shown_unq.n == 0 %}
+            <div class="px-3 py-0.5 text-[9px] text-slate-400 uppercase tracking-wide bg-slate-50 border-t border-slate-100">Not qualified</div>
+            {% endif %}
+            {% set shown_unq.n = shown_unq.n + 1 %}
+            <div class="w-full px-3 py-1.5 flex justify-between items-center opacity-30 cursor-not-allowed select-none">
+              <span class="truncate mr-1 text-slate-500">{{ f.name }}</span>
+              <span class="shrink-0 text-slate-400">—</span>
+            </div>
+            {% endif %}
+            {% endfor %}
+
+          </div>{# /dropdown #}
+        </div>{# /x-data #}
+        {% endif %}{# locked vs interactive #}
+
+        {% endfor %}{# slot #}
+        {% endfor %}{# group #}
 
       </div>
-      {% endfor %} {# sem #}
+      {% endfor %}{# sem #}
 
     </div>
   </main>
