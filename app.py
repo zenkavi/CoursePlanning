@@ -8,6 +8,7 @@ from config import load_config
 from data_loader import load_courses, load_faculty
 from load_calc import all_faculty_loads, new_preps_in_semester
 from models import Assignment, Plan
+from solver import solve as run_solver
 
 app = Flask(__name__)
 
@@ -382,6 +383,26 @@ def diagnostics():
     plan = load_plan()
     data = build_diagnostics(plan)
     return render_template("diagnostics.html", **data)
+
+
+@app.route("/solve", methods=["POST"])
+def solve_route():
+    plan = load_plan()
+    new_assignments = run_solver(faculty_list, courses, plan, cfg, plan.year_range)
+    # Drop previous solver assignments (not locked, not manual), keep locked + manual
+    plan.assignments = [a for a in plan.assignments if a.locked or a.manual]
+    for a in new_assignments:
+        plan.assignments.append(a)
+    save_plan(plan)
+    return redirect(url_for("index"))
+
+
+@app.route("/clear_solver", methods=["POST"])
+def clear_solver():
+    plan = load_plan()
+    plan.assignments = [a for a in plan.assignments if a.locked or a.manual]
+    save_plan(plan)
+    return redirect(url_for("index"))
 
 
 @app.route("/faculty/<name>")

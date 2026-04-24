@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
 {% block topbar %}
-<button disabled class="px-3 py-1 rounded bg-indigo-600 text-white text-xs opacity-40 cursor-not-allowed">Suggest assignments</button>
-<button disabled class="px-3 py-1 rounded border border-slate-300 text-xs opacity-40 cursor-not-allowed">Clear solver</button>
+<button id="solve-btn" onclick="doSolve()" class="px-3 py-1 rounded bg-indigo-600 text-white text-xs hover:bg-indigo-700">Suggest assignments</button>
+<button onclick="doClearSolver()" class="px-3 py-1 rounded border border-slate-300 text-xs hover:bg-slate-50">Clear solver</button>
 <button disabled class="px-3 py-1 rounded border border-slate-300 text-xs opacity-40 cursor-not-allowed">Export CSV</button>
 {% endblock %}
 
@@ -50,6 +50,23 @@ async function doUnassign(slotId) {
   const d = await res.json();
   if (d.ok) location.reload();
   else alert(d.error || 'Unassign failed');
+}
+async function doSolve() {
+  const btn = document.getElementById('solve-btn');
+  btn.disabled = true;
+  btn.textContent = 'Solving…';
+  const res = await fetch('/solve', {method: 'POST'});
+  if (res.ok) location.reload();
+  else {
+    alert('Solver failed');
+    btn.disabled = false;
+    btn.textContent = 'Suggest assignments';
+  }
+}
+async function doClearSolver() {
+  const res = await fetch('/clear_solver', {method: 'POST'});
+  if (res.ok) location.reload();
+  else alert('Failed to clear solver assignments');
 }
 </script>
 
