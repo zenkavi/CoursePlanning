@@ -90,8 +90,8 @@
 **Files:** `app.py`, `templates/planner.html`
 
 - `POST /lock` and `POST /unlock` routes: accept `slot_id`, set `locked=True/False` on matching assignment, return `{ok: true}`
-- `POST /lock_all`: sets `locked=True` on all assignments (including manual); redirects to index
-- `POST /unlock_all`: sets `locked=False` on non-manual assignments only; manual assignments stay protected via `manual=True` flag
+- `POST /lock_all`: sets `locked=True` on all assignments; redirects to index
+- `POST /unlock_all`: sets `locked=False` on all assignments; solver protection for manual assignments comes from `manual=True`, not `locked`
 - `doLock`, `doUnlock`, `doLockAll`, `doUnlockAll` JS functions wired up
 - Locked cards: 🔒 badge is a clickable button that calls `doUnlock`; card remains static (no dropdown)
 - Assigned non-locked cards: dropdown gains "🔒 Lock assignment" option above "Unassign"

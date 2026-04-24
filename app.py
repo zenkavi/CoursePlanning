@@ -454,8 +454,7 @@ def lock_all():
 def unlock_all():
     plan = load_plan()
     for a in plan.assignments:
-        if not a.manual:
-            a.locked = False
+        a.locked = False
     save_plan(plan)
     return redirect(url_for("index"))
 
