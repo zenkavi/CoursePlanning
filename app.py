@@ -405,6 +405,59 @@ def clear_solver():
     return redirect(url_for("index"))
 
 
+@app.route("/lock", methods=["POST"])
+def lock():
+    data = request.get_json()
+    slot_id = data.get("slot_id", "")
+    parts = slot_id.split("__")
+    if len(parts) != 4:
+        return jsonify({"error": "Invalid slot_id"}), 400
+    course_code, year, season, section = parts[0], int(parts[1]), parts[2], int(parts[3])
+    plan = load_plan()
+    existing = plan.get_assignment(course_code, year, season, section)
+    if existing is None:
+        return jsonify({"error": "No assignment to lock"}), 404
+    existing.locked = True
+    save_plan(plan)
+    return jsonify({"ok": True})
+
+
+@app.route("/unlock", methods=["POST"])
+def unlock():
+    data = request.get_json()
+    slot_id = data.get("slot_id", "")
+    parts = slot_id.split("__")
+    if len(parts) != 4:
+        return jsonify({"error": "Invalid slot_id"}), 400
+    course_code, year, season, section = parts[0], int(parts[1]), parts[2], int(parts[3])
+    plan = load_plan()
+    existing = plan.get_assignment(course_code, year, season, section)
+    if existing is None:
+        return jsonify({"error": "No assignment to unlock"}), 404
+    existing.locked = False
+    save_plan(plan)
+    return jsonify({"ok": True})
+
+
+@app.route("/lock_all", methods=["POST"])
+def lock_all():
+    plan = load_plan()
+    for a in plan.assignments:
+        a.locked = True
+    save_plan(plan)
+    return redirect(url_for("index"))
+
+
+@app.route("/unlock_all", methods=["POST"])
+def unlock_all():
+    plan = load_plan()
+    for a in plan.assignments:
+        if not a.manual:
+            a.locked = False
+    save_plan(plan)
+    return redirect(url_for("index"))
+
+
 @app.route("/faculty/<name>")
 def faculty_detail(name):
     faculty = next((f for f in faculty_list if f.name == name), None)

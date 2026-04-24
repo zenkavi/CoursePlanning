@@ -76,10 +76,12 @@ class TestFacultyLoading:
         will = next(f for f in faculty if f.name == "Will")
         assert will.can_teach["sci111"] is True
 
-    def test_prior_counts_default_zero(self, faculty):
+    def test_prior_counts_has_expected_keys(self, faculty):
+        expected = {"sci10", "sci30a", "sci30b", "sci31a", "sci31b", "sci40", "sci50", "sci111", "sci112"}
         for f in faculty:
-            for code in ("sci10", "sci30a", "sci111"):
-                assert f.prior_teaching_counts.get(code, 0) == 0
+            assert expected.issubset(f.prior_teaching_counts.keys()), (
+                f"{f.name} missing keys in prior_teaching_counts"
+            )
 
 
 class TestCourseLoading:

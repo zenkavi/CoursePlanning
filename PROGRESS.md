@@ -1,6 +1,6 @@
 # CMC Course Planner — Build Progress
 
-## Status: Step 8 of 11 complete (OR-Tools solver)
+## Status: Step 9 of 11 complete (Lock/Unlock)
 
 ---
 
@@ -23,7 +23,7 @@
 - `all_faculty_loads(faculty_list, assignments, courses, cfg)` — iterates semesters in chronological order, carrying cumulative counts forward so weight transitions happen correctly mid-plan
 - `new_preps_in_semester()` — identifies new prep courses for a faculty in a given semester
 - Load status colours: green (at target), yellow-under, yellow-over, red
-- 34 load calculator tests passing — **45 total**
+- 24 load calculator tests passing — **45 total**
 
 ### Step 3 — Static Grid Rendering `fbac0da` + `685a451`
 **Files:** `app.py`, `templates/base.html`, `templates/planner.html`, `templates/diagnostics.html`, `templates/faculty_detail.html`
@@ -86,14 +86,20 @@
 - "Suggest assignments" and "Clear solver" buttons wired up (show "Solving…" during run)
 - 8 solver tests passing — **53 total**
 
+### Step 9 — Lock/Unlock
+**Files:** `app.py`, `templates/planner.html`
+
+- `POST /lock` and `POST /unlock` routes: accept `slot_id`, set `locked=True/False` on matching assignment, return `{ok: true}`
+- `POST /lock_all`: sets `locked=True` on all assignments (including manual); redirects to index
+- `POST /unlock_all`: sets `locked=False` on non-manual assignments only; manual assignments stay protected via `manual=True` flag
+- `doLock`, `doUnlock`, `doLockAll`, `doUnlockAll` JS functions wired up
+- Locked cards: 🔒 badge is a clickable button that calls `doUnlock`; card remains static (no dropdown)
+- Assigned non-locked cards: dropdown gains "🔒 Lock assignment" option above "Unassign"
+- "Lock all" / "Unlock all" buttons added to top bar
+
 ---
 
 ## Up Next
-
-### Step 9 — Lock/Unlock
-- Lock individual assignments (solver won't touch them on re-run)
-- "Lock all" / "Unlock all" buttons
-- Locked cards show 🔒 icon
 
 ### Step 10 — Config Panel
 Sidebar with tunable parameters from `config.yaml`; "Re-solve" triggers a new solver run with updated weights.

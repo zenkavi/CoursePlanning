@@ -3,6 +3,8 @@
 {% block topbar %}
 <button id="solve-btn" onclick="doSolve()" class="px-3 py-1 rounded bg-indigo-600 text-white text-xs hover:bg-indigo-700">Suggest assignments</button>
 <button onclick="doClearSolver()" class="px-3 py-1 rounded border border-slate-300 text-xs hover:bg-slate-50">Clear solver</button>
+<button onclick="doLockAll()" class="px-3 py-1 rounded border border-slate-300 text-xs hover:bg-slate-50">Lock all</button>
+<button onclick="doUnlockAll()" class="px-3 py-1 rounded border border-slate-300 text-xs hover:bg-slate-50">Unlock all</button>
 <button disabled class="px-3 py-1 rounded border border-slate-300 text-xs opacity-40 cursor-not-allowed">Export CSV</button>
 {% endblock %}
 
@@ -67,6 +69,34 @@ async function doClearSolver() {
   const res = await fetch('/clear_solver', {method: 'POST'});
   if (res.ok) location.reload();
   else alert('Failed to clear solver assignments');
+}
+async function doLock(slotId) {
+  const res = await fetch('/lock', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({slot_id: slotId})
+  });
+  const d = await res.json();
+  if (d.ok) location.reload();
+  else alert(d.error || 'Lock failed');
+}
+async function doUnlock(slotId) {
+  const res = await fetch('/unlock', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({slot_id: slotId})
+  });
+  const d = await res.json();
+  if (d.ok) location.reload();
+  else alert(d.error || 'Unlock failed');
+}
+async function doLockAll() {
+  await fetch('/lock_all', {method: 'POST'});
+  location.reload();
+}
+async function doUnlockAll() {
+  await fetch('/unlock_all', {method: 'POST'});
+  location.reload();
 }
 </script>
 
@@ -203,7 +233,9 @@ async function doClearSolver() {
             {% else %}text-slate-400{% endif %}">
             {{ "%.2f"|format(cl.get('total', 0)) }}
           </span>
-          <span class="text-[9px] text-amber-500">🔒</span>
+          <button onclick="doUnlock({{ slot.slot_id | tojson }})"
+                  title="Click to unlock"
+                  class="text-[9px] text-amber-500 hover:text-amber-700 cursor-pointer leading-none">🔒</button>
         </div>
 
         {% else %}
@@ -244,6 +276,10 @@ async function doClearSolver() {
                class="bg-white border border-slate-200 rounded shadow-lg max-h-64 overflow-y-auto text-xs">
 
             {% if slot.assignment %}
+            <button class="w-full text-left px-3 py-1.5 text-slate-600 hover:bg-slate-50 border-b border-slate-100"
+                    @click='doLock({{ slot.slot_id | tojson }})'>
+              🔒 Lock assignment
+            </button>
             <button class="w-full text-left px-3 py-1.5 text-red-600 hover:bg-red-50 border-b border-slate-100"
                     @click='doUnassign({{ slot.slot_id | tojson }})'>
               Unassign {{ slot.assignment.faculty_name }}
