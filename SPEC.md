@@ -227,7 +227,7 @@ These appear as a sidebar in the UI so the user can tweak and re-solve.
 - "Suggest assignments" button (runs solver on non-locked, non-manual slots)
 - "Clear solver assignments" (preserves manual + locked)
 - "Lock all" / "Unlock all"
-- "Export to CSV"
+- "Export xlsx"
 - Config panel toggle
 
 ### Diagnostics Panel
@@ -252,7 +252,7 @@ These appear as a sidebar in the UI so the user can tweak and re-solve.
 8. ✅ **OR-Tools solver:** "Suggest" button fills non-locked foundational/sci111/112 slots
 9. ✅ **Lock/unlock** + re-run on unlocked subset
 10. ✅ **Config panel:** tweakable parameters with "re-solve"
-11. ⬜ **CSV export** of final plan + gap report
+11. ✅ **xlsx export** of final plan + gap report
 12. ⬜ *(Deferred)* Sabbatical/availability UI
 13. ⬜ *(Deferred)* Edit faculty qualifications in-app
 

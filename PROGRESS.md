@@ -1,6 +1,6 @@
 # CMC Course Planner — Build Progress
 
-## Status: Step 10 of 11 complete (Config Panel)
+## Status: Step 11 of 11 complete — MVP done
 
 ---
 
@@ -118,12 +118,20 @@
 - **Save** button: POSTs to `/update_config`, reloads page
 - **Save & Re-solve** button: POSTs to `/update_config`, then POSTs to `/solve` in sequence so the solver runs with the updated weights
 
+### Step 11 — xlsx Export `db9c80f`
+**Files:** `app.py`, `templates/planner.html`
+
+- `GET /export` builds a two-sheet `openpyxl` workbook and streams it as `cmc_plan.xlsx` via `send_file` (no temp file on disk)
+- Module-level `_BOLD` (`Font`) and `_STATUS_FILL` (`PatternFill`) constants for green/yellow/red cell fills matching the UI colours
+- **Sheet 1 — Plan**: one row per assignment sorted by year → semester (fall first) → course → section; columns: Faculty, Rank, Course, Year, Semester, Section, Flavor, Locked, Manual, Base Weight, Actual Weight. Weights pulled from `all_faculty_loads` item detail so new-prep bonus timing is accurate.
+- **Sheet 2 — Gap Report**: five sections with bold section/column headers — Coverage, Unfilled Sections, Faculty Loads (with colour-coded cells), Bottleneck Courses, Junior New-Prep Counts
+- "Export xlsx" `<a href="/export">` replaces the formerly disabled "Export CSV" stub button
+
 ---
 
 ## Up Next
 
-### Step 11 — CSV Export
-Export current plan + gap report to CSV/Excel via `openpyxl`.
+MVP is complete. Remaining items are deferred post-MVP.
 
 ---
 
