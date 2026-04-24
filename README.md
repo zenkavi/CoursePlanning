@@ -1,6 +1,6 @@
 # CMC Integrated Science Course Planner
 
-A web app for planning faculty assignments across the three-year Integrated Science curriculum at CMC. It tracks weighted teaching loads, flags constraint violations, and (eventually) runs a solver to suggest assignments automatically.
+A web app for planning faculty assignments across the three-year Integrated Science curriculum at CMC. It tracks weighted teaching loads, flags constraint violations, and runs a solver to suggest assignments automatically.
 
 ## Quick start
 
@@ -28,6 +28,12 @@ rm data/plan.json
 ## What it does
 
 **Grid view** (`/`) — A 6-column schedule (Fall Y1 through Spring Y3) with every course section as a slot. Click a slot to assign a faculty member from the dropdown. The faculty sidebar shows annual load badges (Y1/Y2/Y3) colour-coded by status; click a faculty name to highlight all their assignments in the grid. Warning badges appear on faculty with constraint violations.
+
+- **Lock/unlock** individual assignments (or all at once) to pin them before running the solver.
+- **Sci10 flavor** — each Sci10 section can be tagged health/neuro/earth from the assignment dropdown.
+- **Solver** — the "Solve" button auto-fills remaining unfilled slots using a constraint solver; locked and manually-placed assignments are preserved.
+- **Config panel** — edit load parameters (caps, weights) from the UI and re-solve without touching `config.yaml`.
+- **Export** — download the current plan and a gap report as an xlsx file.
 
 **Diagnostics view** (`/diagnostics`) — Read-only summary of the current plan:
 - Coverage per semester (filled / 26 sections)
@@ -66,6 +72,7 @@ Edit `data/config.yaml`. Key parameters:
 |---|---|---|
 | `junior_faculty_hard_cap` | 2.0 | Max load per semester for junior faculty |
 | `senior_faculty_soft_cap` | 2.0 | Soft load cap per semester for senior faculty |
+| `junior_new_lab_preps_per_year_max` | 1 | Max new lab preps per year for junior faculty |
 | `target_annual_load` | 4.0 | Target total load per year |
 | `new_prep_weight` | 2.0 | Load weight for a course taught fewer than `new_prep_bonus_count` times |
 | `new_prep_bonus_count` | 2 | Number of times a course must be taught before it drops to experienced weight |
@@ -85,11 +92,11 @@ If a faculty member teaches two sections of the same course in the same semester
 
 ## Constraint violations
 
-The app tracks two types of violations shown as warning badges on the faculty sidebar:
+The app tracks three types of violations shown as warning badges on the faculty sidebar:
 
 - **Hard cap exceeded** (error): a junior faculty member's semester load exceeds `junior_faculty_hard_cap`.
 - **Senior soft cap exceeded** (warning): a senior faculty member's semester load exceeds `senior_faculty_soft_cap`.
-- **Too many new lab preps** (warning): a junior faculty member has more than one brand-new lab prep in a single academic year.
+- **Too many new lab preps** (warning): a junior faculty member has more than `junior_new_lab_preps_per_year_max` new lab preps in a single academic year.
 
 ## Running tests
 
@@ -97,8 +104,8 @@ The app tracks two types of violations shown as warning badges on the faculty si
 pytest
 ```
 
-45 tests covering data loading and load calculation.
+53 tests covering data loading, load calculation, and the solver.
 
 ## Project status
 
-Steps completed: 1–7 (data loading, load calc, grid rendering, manual assignment UI, live load display, constraint validator, diagnostics panel). See `PROGRESS.md` for details.
+Steps completed: 1–11 (data loading, load calc, grid rendering, manual assignment UI, live load display, constraint validator, diagnostics panel, solver, lock/unlock, config panel, xlsx export). See `PROGRESS.md` for details.
