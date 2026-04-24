@@ -361,9 +361,10 @@ def build_diagnostics(plan: Plan) -> dict:
                     if a.faculty_name == f.name and a.year == year and a.semester == sem
                 ]
                 for a in sem_assigns:
-                    if cumulative.get(a.course_code, 0) == 0:
+                    ck = count_key(a)
+                    if cumulative.get(ck, 0) == 0:
                         year_new.add(a.course_code)
-                    cumulative[a.course_code] = cumulative.get(a.course_code, 0) + 1
+                    cumulative[ck] = cumulative.get(ck, 0) + 1
             years_data[year] = {
                 "count": len(year_new),
                 "names": [courses[c].display_name for c in year_new if c in courses],

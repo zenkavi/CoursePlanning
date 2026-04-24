@@ -13,7 +13,7 @@
 - `load_faculty()` parses `faculty.csv`: handles 3 sci10 flavor columns, maps CSV column `"sci11 organic"` → course code `sci111`, builds generic `can_teach["sci10"]` from flavor union
 - `load_courses()` parses `courses.yaml` → `Course` objects
 - `load_config()` reads `config.yaml` with hardcoded fallback defaults
-- 11 faculty/course loading tests passing
+- 21 faculty/course loading tests passing
 
 ### Step 2 — Load Calculator `5d682fc`
 **Files:** `load_calc.py`, `tests/test_load_calc.py`
@@ -96,6 +96,16 @@
 - Locked cards: 🔒 badge is a clickable button that calls `doUnlock`; card remains static (no dropdown)
 - Assigned non-locked cards: dropdown gains "🔒 Lock assignment" option above "Unassign"
 - "Lock all" / "Unlock all" buttons added to top bar
+
+### sci10 Flavor-Specific Teaching History
+**Files:** `data/teaching_history.csv`, `data_loader.py`, `load_calc.py`, `solver.py`, `app.py`, `templates/planner.html`
+
+- `teaching_history.csv` now tracks sci10 by flavor: `sci10h`, `sci10n`, `sci10e` columns (instead of a single `sci10` column)
+- `data_loader.py`: `_HISTORY_COL_MAP` maps `sci10h/n/e` → `sci10_health/neuro/earth`; `prior_teaching_counts` now stores flavor-specific keys aligned with `can_teach` naming; other course codes pass through unchanged
+- `load_calc.py`: `count_key(assignment)` exported helper returns `sci10_{flavor}` for sci10 (when flavor is set) or `assignment.course_code` otherwise; used in `semester_load`, `all_faculty_loads`, `new_preps_in_semester`, and `build_diagnostics` so new-prep bonuses are flavor-accurate
+- `solver.py`: `_build_pre_counts` aggregates `sci10_health + sci10_neuro + sci10_earth` into a single total for solver pre-counts (solver assigns flavor post-hoc); locked/manual plan assignments update the flavor-specific key via `count_key`
+- `app.py`: `POST /set_flavor` route validates faculty qualification for the requested flavor, then updates `assignment.flavor`; `build_diagnostics` junior new-prep counts updated to use `count_key`
+- `templates/planner.html`: H/N/E flavor badge on all assigned sci10 cards; flavor selection dropdown (filtered to flavors the assigned faculty qualifies for, with checkmark on current); `doSetFlavor()` JS helper
 
 ---
 

@@ -58,7 +58,7 @@ CoursePlanning/
 ### Faculty
 - `name`, `area`, `research_method`, `rank` ("junior" | "senior")
 - `can_teach`: `{course_code: bool}` — includes `sci10`, `sci10_health`, `sci10_neuro`, `sci10_earth`
-- `prior_teaching_counts`: `{course_code: int}` from `teaching_history.csv`
+- `prior_teaching_counts`: `{course_code: int}` from `teaching_history.csv` — sci10 history is stored per-flavor (`sci10_health`, `sci10_neuro`, `sci10_earth`); no generic `sci10` key
 - `unavailable_semesters`: list of `(year, semester)` tuples (deferred; empty for MVP)
 
 ### Course
@@ -178,6 +178,8 @@ def section_weight(course, faculty, times_taught_before, cfg):
 - Default: `0.5` (reflects shared prep burden)
 
 Cumulative counts carry forward across semesters: a faculty who taught sci10 once in Fall Y1 has `times_taught_before = 1` in Spring Y1, affecting their weight.
+
+**sci10 flavor-specific counting:** Because `prior_teaching_counts` stores per-flavor history, `times_taught_before` for a sci10 assignment is looked up by the assignment's specific flavor key (e.g. `sci10_health`). Teaching sci10 Health counts as a new prep independently of whether the faculty has taught sci10 Neuro or Earth before. The solver aggregates all three flavor counts into a single sci10 total for its pre-count lookup (since it assigns flavor post-hoc).
 
 ---
 
