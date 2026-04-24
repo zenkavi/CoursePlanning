@@ -1,0 +1,21 @@
+Name,Area,Research method,Rank,sci10 health,sci10 neuro,sci10 earth,sci30a chem1,sci30b phys1,sci31a chem2,sci31b bio1,sci40 phys2,sci50,sci11 organic,sci112 biochem
+Emily KH,Health,Lab,Junior,1,1,0,0,0,0,1,0,0,0,1
+Shaun,Health,Lab,Senior,1,1,0,0,0,0,1,0,0,0,1
+Ran,Health,Comp,Senior,1,0,0,0,0,0,0,0,1,0,0
+Colin,Health,Lab,Junior,1,0,0,1,0,1,1,0,0,1,1
+Shibu,Health,Comp,Senior,1,1,1,0,0,0,0,0,1,0,0
+Will,Health,Lab,Senior,1,0,0,1,0,1,0,0,0,1,1
+Najva,Neuro,"Lab, comp",Junior,0,1,0,0,1,0,0,1,0,0,0
+Zeynep,Neuro,Comp,Junior,1,1,0,0,0,0,0,0,1,0,0
+Eric,Neuro,"Lab, comp",Junior,1,1,0,0,0,0,1,0,1,0,1
+Diana,Neuro,Lab,Senior,0,1,0,0,0,0,0,0,0,0,0
+Rui,Earth,"Field, comp",Junior,0,0,1,0,1,0,0,1,1,0,0
+Jason,Earth,"Lab, field",Senior,1,0,1,1,0,1,1,0,0,0,0
+Jon,Earth,Lab,Junior,1,0,1,1,1,1,0,0,0,1,1
+Nia,Earth,Lab,Junior,1,1,1,0,0,0,1,0,1,0,0
+Branwen,Earth,"Lab, field",Senior,0,0,1,0,0,0,0,0,0,0,0
+AC,Earth,Lab,Junior,1,0,1,1,0,1,0,0,0,1,0
+Avaneesh,Cross-theme,"Field, comp",Junior,1,0,0,1,1,0,0,1,1,0,0
+Lars,Cross-theme,"Lab, field",Senior,1,1,1,0,0,0,1,0,0,0,0
+Paul,Cross-theme,Comp,Senior,1,0,1,1,1,1,1,1,1,0,1
+Pranav,Cross-theme,"Lab, comp",Junior,0,1,1,1,1,0,0,1,1,0,0

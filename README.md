@@ -4,6 +4,16 @@ A web app for planning faculty assignments across the three-year Integrated Scie
 
 ## Quick start
 
+**First-time setup** (requires Python 3.12+):
+
+```bash
+python -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+**Run the app:**
+
 ```bash
 python app.py
 ```
