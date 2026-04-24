@@ -245,9 +245,9 @@ These appear as a sidebar in the UI so the user can tweak and re-solve.
 3. ✅ **Static 6-semester grid** rendering (read-only, empty)
 4. ✅ **Manual assignment UI:** click slot → pick faculty; upper-div placeholders fillable
 5. ✅ **Live load display** per faculty per semester with colour coding
-6. ⬜ **Constraint validator:** warnings surface in real time
-7. ⬜ **Diagnostics panel v1:** coverage %, unfilled sections, faculty load table
-8. ⬜ **OR-Tools solver:** "Suggest" button fills non-locked foundational/sci111/112 slots
+6. ✅ **Constraint validator:** warnings surface in real time
+7. ✅ **Diagnostics panel v1:** coverage %, unfilled sections, faculty load table
+8. ✅ **OR-Tools solver:** "Suggest" button fills non-locked foundational/sci111/112 slots
 9. ⬜ **Lock/unlock** + re-run on unlocked subset
 10. ⬜ **Config panel:** tweakable parameters with "re-solve"
 11. ⬜ **CSV export** of final plan + gap report

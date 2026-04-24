@@ -1,6 +1,6 @@
 # CMC Course Planner — Build Progress
 
-## Status: Step 7 of 11 complete (diagnostics panel)
+## Status: Step 8 of 11 complete (OR-Tools solver)
 
 ---
 
@@ -74,15 +74,21 @@
 - **Junior new-prep counts** — per-year count of brand-new courses (zero prior history, matching `compute_violations` logic); red with `!` badge if > 1 in a year
 - Suggestions feature deferred to post-MVP
 
+### Step 8 — OR-Tools Solver
+**Files:** `solver.py`, `app.py`, `templates/planner.html`, `tests/test_solver.py`
+
+- `solver.py` with CP-SAT model: `solve(faculty_list, courses, plan, cfg, year_range)` returns list of `Assignment` objects
+- Hard constraints: at-most-one faculty per slot; junior semester load hard cap (full weights, no `extra_section_weight_multiplier` — conservative but safe)
+- Objective (descending weight): coverage (+1000/slot) > junior new-preps (−100) > load balance (−50/unit over per-sem target) > senior over soft cap (−75/unit) > sci10 flavor diversity (+10/flavor/sem) > senior takes new lab preps (+25)
+- Load weights scaled ×100 for CP-SAT integer arithmetic; 25-second time limit
+- `POST /solve` route: runs solver, replaces prior solver assignments, preserves locked + manual
+- `POST /clear_solver` route: drops all non-locked, non-manual assignments
+- "Suggest assignments" and "Clear solver" buttons wired up (show "Solving…" during run)
+- 8 solver tests passing — **53 total**
+
 ---
 
 ## Up Next
-
-### Step 8 — OR-Tools Solver
-"Suggest assignments" button runs CP-SAT on non-locked, non-manual slots.
-- `solver.py` with CP-SAT model
-- Objective: coverage (1000) > junior new-preps (100) > load balance (50) > ...
-- Load weights scaled by ×100 for integer arithmetic
 
 ### Step 9 — Lock/Unlock
 - Lock individual assignments (solver won't touch them on re-run)
@@ -123,8 +129,9 @@ Export current plan + gap report to CSV/Excel via `openpyxl`.
 ```
 tests/test_data_loader.py   21 tests  ✅
 tests/test_load_calc.py     24 tests  ✅
+tests/test_solver.py         8 tests  ✅
 ─────────────────────────────────────
-Total                        45 tests  all passing
+Total                        53 tests  all passing
 ```
 
 Run with: `python -m pytest tests/ -v`
