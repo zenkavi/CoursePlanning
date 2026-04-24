@@ -5,6 +5,7 @@
 <button onclick="doClearSolver()" class="px-3 py-1 rounded border border-slate-300 text-xs hover:bg-slate-50">Clear solver</button>
 <button onclick="doLockAll()" class="px-3 py-1 rounded border border-slate-300 text-xs hover:bg-slate-50">Lock all</button>
 <button onclick="doUnlockAll()" class="px-3 py-1 rounded border border-slate-300 text-xs hover:bg-slate-50">Unlock all</button>
+<button onclick="Alpine.store('configPanel').toggle()" class="px-3 py-1 rounded border border-slate-300 text-xs hover:bg-slate-50">Config</button>
 <button disabled class="px-3 py-1 rounded border border-slate-300 text-xs opacity-40 cursor-not-allowed">Export CSV</button>
 {% endblock %}
 
@@ -16,6 +17,10 @@ document.addEventListener('alpine:init', () => {
   Alpine.store('selection', {
     faculty: null,
     toggle(name) { this.faculty = this.faculty === name ? null : name; }
+  });
+  Alpine.store('configPanel', {
+    open: false,
+    toggle() { this.open = !this.open; }
   });
 });
 function slotDropdown() {
@@ -107,6 +112,60 @@ async function doSetFlavor(slotId, flavor) {
   const d = await res.json();
   if (d.ok) location.reload();
   else alert(d.error || 'Flavor update failed');
+}
+function collectConfigData() {
+  const gf = id => parseFloat(document.getElementById(id).value);
+  const gi = id => parseInt(document.getElementById(id).value, 10);
+  return {
+    junior_faculty_hard_cap:          gf('cfg_junior_faculty_hard_cap'),
+    senior_faculty_soft_cap:          gf('cfg_senior_faculty_soft_cap'),
+    junior_new_lab_preps_per_year_max: gi('cfg_junior_new_lab_preps_per_year_max'),
+    new_prep_bonus_count:              gi('cfg_new_prep_bonus_count'),
+    new_prep_weight:                   gf('cfg_new_prep_weight'),
+    foundational_experienced_weight:   gf('cfg_foundational_experienced_weight'),
+    extra_section_weight_multiplier:   gf('cfg_extra_section_weight_multiplier'),
+    target_annual_load:                gf('cfg_target_annual_load'),
+    objective_weights: {
+      section_coverage:      gi('cfg_ow_section_coverage'),
+      junior_new_preps:      gi('cfg_ow_junior_new_preps'),
+      load_balance:          gi('cfg_ow_load_balance'),
+      senior_over_cap:       gi('cfg_ow_senior_over_cap'),
+      sci10_flavor_diversity: gi('cfg_ow_sci10_flavor_diversity'),
+      senior_takes_new_preps: gi('cfg_ow_senior_takes_new_preps'),
+    }
+  };
+}
+async function doSaveConfig() {
+  const d = await fetch('/update_config', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(collectConfigData())
+  }).then(r => r.json());
+  if (d.ok) location.reload();
+  else alert(d.error || 'Config update failed');
+}
+async function doSaveAndResolve() {
+  const btn = document.getElementById('save-solve-btn');
+  btn.disabled = true;
+  btn.textContent = 'Solving…';
+  const d = await fetch('/update_config', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(collectConfigData())
+  }).then(r => r.json());
+  if (!d.ok) {
+    alert(d.error || 'Config update failed');
+    btn.disabled = false;
+    btn.textContent = 'Save & Re-solve';
+    return;
+  }
+  const res = await fetch('/solve', {method: 'POST'});
+  if (res.ok) location.reload();
+  else {
+    alert('Solver failed');
+    btn.disabled = false;
+    btn.textContent = 'Save & Re-solve';
+  }
 }
 </script>
 
@@ -407,4 +466,52 @@ async function doSetFlavor(slotId, flavor) {
   </main>
 
 </div>
+
+{# ── Config panel (right-side drawer) ───────────────────────────────── #}
+<div x-data x-show="$store.configPanel.open" x-cloak
+     class="fixed top-[45px] right-0 bottom-0 w-72 bg-white border-l border-slate-200 shadow-xl z-20 flex flex-col">
+  <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between shrink-0">
+    <span class="font-semibold text-sm text-slate-700">Solver Config</span>
+    <button @click="$store.configPanel.open = false"
+            class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+  </div>
+
+  <div class="flex-1 overflow-y-auto scrollbar-thin px-4 py-3">
+    <div class="text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-2">Constraints</div>
+    {% macro cfg_field(id, label, val, step='0.1', min='0') %}
+    <label class="block mb-2">
+      <span class="text-xs text-slate-600">{{ label }}</span>
+      <input type="number" id="{{ id }}" value="{{ val }}" step="{{ step }}" min="{{ min }}"
+             class="mt-0.5 w-full rounded border border-slate-300 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400">
+    </label>
+    {% endmacro %}
+    {{ cfg_field('cfg_junior_faculty_hard_cap',          'Junior hard cap (per semester)',    cfg.junior_faculty_hard_cap) }}
+    {{ cfg_field('cfg_senior_faculty_soft_cap',          'Senior soft cap (per semester)',    cfg.senior_faculty_soft_cap) }}
+    {{ cfg_field('cfg_junior_new_lab_preps_per_year_max','Junior max new lab preps / year',  cfg.junior_new_lab_preps_per_year_max, step='1') }}
+    {{ cfg_field('cfg_target_annual_load',               'Target annual load',               cfg.target_annual_load) }}
+
+    <div class="text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-2 mt-4">Load Weights</div>
+    {{ cfg_field('cfg_new_prep_bonus_count',             'New-prep bonus applies for N teaches', cfg.new_prep_bonus_count, step='1') }}
+    {{ cfg_field('cfg_new_prep_weight',                  'New-prep section weight',           cfg.new_prep_weight) }}
+    {{ cfg_field('cfg_foundational_experienced_weight',  'Experienced foundational weight',   cfg.foundational_experienced_weight) }}
+    {{ cfg_field('cfg_extra_section_weight_multiplier',  'Extra section multiplier (0.5=half)', cfg.extra_section_weight_multiplier) }}
+
+    <div class="text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-2 mt-4">Objective Weights</div>
+    {% set ow = cfg.objective_weights %}
+    {{ cfg_field('cfg_ow_section_coverage',      'Section coverage',        ow.section_coverage,      step='10') }}
+    {{ cfg_field('cfg_ow_junior_new_preps',      'Junior new preps penalty', ow.junior_new_preps,      step='10') }}
+    {{ cfg_field('cfg_ow_load_balance',          'Load balance penalty',    ow.load_balance,          step='5') }}
+    {{ cfg_field('cfg_ow_senior_over_cap',       'Senior over cap penalty', ow.senior_over_cap,       step='5') }}
+    {{ cfg_field('cfg_ow_sci10_flavor_diversity','SCI 10 flavor diversity', ow.sci10_flavor_diversity, step='5') }}
+    {{ cfg_field('cfg_ow_senior_takes_new_preps','Senior new lab prep bonus', ow.senior_takes_new_preps, step='5') }}
+  </div>
+
+  <div class="px-4 py-3 border-t border-slate-200 flex gap-2 shrink-0">
+    <button onclick="doSaveConfig()"
+            class="flex-1 px-3 py-1.5 rounded border border-slate-300 text-xs hover:bg-slate-50">Save</button>
+    <button id="save-solve-btn" onclick="doSaveAndResolve()"
+            class="flex-1 px-3 py-1.5 rounded bg-indigo-600 text-white text-xs hover:bg-indigo-700">Save &amp; Re-solve</button>
+  </div>
+</div>
+
 {% endblock %}

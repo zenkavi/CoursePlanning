@@ -2,6 +2,7 @@ import json
 import os
 from itertools import groupby
 
+import yaml
 from flask import Flask, jsonify, redirect, render_template, request, url_for
 
 from config import load_config
@@ -14,6 +15,7 @@ app = Flask(__name__)
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 PLAN_FILE = os.path.join(DATA_DIR, "plan.json")
+CONFIG_FILE = os.path.join(DATA_DIR, "config.yaml")
 
 # Load static data once at startup
 faculty_list = load_faculty()
@@ -487,6 +489,49 @@ def set_flavor():
 
     existing.flavor = flavor
     save_plan(plan)
+    return jsonify({"ok": True})
+
+
+@app.route("/update_config", methods=["POST"])
+def update_config():
+    global cfg
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data"}), 400
+
+    scalar_keys = [
+        "junior_faculty_hard_cap", "senior_faculty_soft_cap",
+        "junior_new_lab_preps_per_year_max", "new_prep_bonus_count",
+        "new_prep_weight", "foundational_experienced_weight",
+        "extra_section_weight_multiplier", "target_annual_load",
+    ]
+    int_keys = {"junior_new_lab_preps_per_year_max", "new_prep_bonus_count"}
+    weight_keys = [
+        "section_coverage", "junior_new_preps", "load_balance",
+        "senior_over_cap", "sci10_flavor_diversity", "senior_takes_new_preps",
+    ]
+
+    new_cfg = dict(cfg)
+    for k in scalar_keys:
+        if k in data:
+            try:
+                new_cfg[k] = int(data[k]) if k in int_keys else float(data[k])
+            except (ValueError, TypeError):
+                return jsonify({"error": f"Invalid value for {k}"}), 400
+
+    new_weights = dict(cfg.get("objective_weights", {}))
+    for k in weight_keys:
+        if k in data.get("objective_weights", {}):
+            try:
+                new_weights[k] = int(data["objective_weights"][k])
+            except (ValueError, TypeError):
+                return jsonify({"error": f"Invalid value for objective weight {k}"}), 400
+    new_cfg["objective_weights"] = new_weights
+
+    cfg = new_cfg
+    with open(CONFIG_FILE, "w") as f:
+        yaml.dump(cfg, f, default_flow_style=False, sort_keys=False)
+
     return jsonify({"ok": True})
 
 
