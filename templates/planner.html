@@ -6,7 +6,7 @@
 <button onclick="doLockAll()" class="px-3 py-1 rounded border border-slate-300 text-xs hover:bg-slate-50">Lock all</button>
 <button onclick="doUnlockAll()" class="px-3 py-1 rounded border border-slate-300 text-xs hover:bg-slate-50">Unlock all</button>
 <button onclick="Alpine.store('configPanel').toggle()" class="px-3 py-1 rounded border border-slate-300 text-xs hover:bg-slate-50">Config</button>
-<button disabled class="px-3 py-1 rounded border border-slate-300 text-xs opacity-40 cursor-not-allowed">Export CSV</button>
+<a href="/export" class="px-3 py-1 rounded border border-slate-300 text-xs hover:bg-slate-50">Export xlsx</a>
 {% endblock %}
 
 {% block content %}

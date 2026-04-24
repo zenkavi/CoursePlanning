@@ -1,9 +1,12 @@
 import json
 import os
+from io import BytesIO
 from itertools import groupby
 
+import openpyxl
 import yaml
-from flask import Flask, jsonify, redirect, render_template, request, url_for
+from flask import Flask, jsonify, redirect, render_template, request, send_file, url_for
+from openpyxl.styles import Font, PatternFill
 
 from config import load_config
 from data_loader import load_courses, load_faculty
@@ -21,6 +24,14 @@ CONFIG_FILE = os.path.join(DATA_DIR, "config.yaml")
 faculty_list = load_faculty()
 courses = load_courses()
 cfg = load_config()
+
+_BOLD = Font(bold=True)
+_STATUS_FILL = {
+    "green":        PatternFill("solid", fgColor="C6EFCE"),
+    "yellow-over":  PatternFill("solid", fgColor="FFEB9C"),
+    "yellow-under": PatternFill("solid", fgColor="FFEB9C"),
+    "red":          PatternFill("solid", fgColor="FFC7CE"),
+}
 
 COURSE_ORDER = [
     "sci10", "sci30a", "sci30b", "sci31a", "sci31b", "sci40", "sci50",
@@ -533,6 +544,151 @@ def update_config():
         yaml.dump(cfg, f, default_flow_style=False, sort_keys=False)
 
     return jsonify({"ok": True})
+
+
+@app.route("/export")
+def export():
+    plan = load_plan()
+    loads = all_faculty_loads(faculty_list, plan.assignments, courses, cfg)
+    diag = build_diagnostics(plan)
+    faculty_by_name = {f.name: f for f in faculty_list}
+
+    wb = openpyxl.Workbook()
+
+    # ── Sheet 1: Plan ─────────────────────────────────────────────────────
+    ws = wb.active
+    ws.title = "Plan"
+
+    plan_headers = [
+        "Faculty", "Rank", "Course", "Year", "Semester", "Section",
+        "Flavor", "Locked", "Manual", "Base Weight", "Actual Weight",
+    ]
+    for col, h in enumerate(plan_headers, 1):
+        ws.cell(1, col, h).font = _BOLD
+
+    # Build weight lookup: (faculty, course, year, sem, section) → item dict
+    weight_lookup = {}
+    for fname, sems in loads.items():
+        for (year, sem), data in sems.items():
+            for item in data.get("items", []):
+                key = (fname, item["course_code"], year, sem, item["section_number"])
+                weight_lookup[key] = item
+
+    sorted_assignments = sorted(
+        plan.assignments,
+        key=lambda a: (a.year, 0 if a.semester == "fall" else 1, a.course_code, a.section_number),
+    )
+    for r, a in enumerate(sorted_assignments, 2):
+        f = faculty_by_name.get(a.faculty_name)
+        course = courses.get(a.course_code)
+        wt = weight_lookup.get((a.faculty_name, a.course_code, a.year, a.semester, a.section_number), {})
+        row = [
+            a.faculty_name,
+            "J" if (f and f.is_junior()) else "S",
+            course.display_name if course else a.course_code,
+            a.year,
+            a.semester.capitalize(),
+            a.section_number,
+            a.flavor or "",
+            "Yes" if a.locked else "No",
+            "Yes" if a.manual else "No",
+            wt.get("base_weight", ""),
+            wt.get("actual_weight", ""),
+        ]
+        for col, val in enumerate(row, 1):
+            ws.cell(r, col, val)
+
+    for col in ws.columns:
+        max_len = max((len(str(c.value or "")) for c in col), default=0)
+        ws.column_dimensions[col[0].column_letter].width = min(max_len + 2, 30)
+
+    # ── Sheet 2: Gap Report ───────────────────────────────────────────────
+    ws2 = wb.create_sheet("Gap Report")
+    row = 1
+
+    def gap_header(label):
+        nonlocal row
+        ws2.cell(row, 1, label).font = _BOLD
+        row += 1
+
+    def gap_row(values, fills=None):
+        nonlocal row
+        for col, val in enumerate(values, 1):
+            cell = ws2.cell(row, col, val)
+            if fills and col <= len(fills) and fills[col - 1]:
+                cell.fill = fills[col - 1]
+        row += 1
+
+    def gap_subheader(cols):
+        nonlocal row
+        for col, h in enumerate(cols, 1):
+            ws2.cell(row, col, h).font = _BOLD
+        row += 1
+
+    # Coverage
+    gap_header("Coverage")
+    gap_subheader(["Semester", "Filled", "Total", "%"])
+    for c in diag["coverage"]:
+        gap_row([c["label"], c["filled"], c["total"], c["pct"]])
+    row += 1
+
+    # Unfilled sections
+    gap_header("Unfilled Sections")
+    gap_subheader(["Semester", "Course", "Section", "Placeholder"])
+    for u in diag["unfilled"]:
+        gap_row([
+            u["semester_label"], u["course_name"], u["section"],
+            "Yes" if u["is_placeholder"] else "No",
+        ])
+    row += 1
+
+    # Faculty loads
+    gap_header("Faculty Loads")
+    load_headers = ["Faculty", "Rank"]
+    for yr in [1, 2, 3]:
+        load_headers += [f"Y{yr} Fall", f"Y{yr} Spring", f"Y{yr} Annual"]
+    gap_subheader(load_headers)
+    for frow in diag["faculty_loads_table"]:
+        values = [frow["name"], frow["rank"]]
+        fills = [None, None]
+        for yr in [1, 2, 3]:
+            yd = frow["years"].get(yr, {})
+            fill = _STATUS_FILL.get(yd.get("status", "empty"))
+            values += [yd.get("fall", 0), yd.get("spring", 0), yd.get("annual", 0)]
+            fills += [fill, fill, fill]
+        gap_row(values, fills=fills)
+    row += 1
+
+    # Bottleneck courses
+    gap_header("Bottleneck Courses")
+    gap_subheader(["Course", "Qualified Faculty", "Total Sections (3yr)", "Sections/Faculty"])
+    for b in diag["bottlenecks"]:
+        gap_row([b["name"], b["qualified"], b["total_sections"], b["ratio"]])
+    row += 1
+
+    # Junior new-prep counts
+    gap_header("Junior New-Prep Counts")
+    gap_subheader(["Faculty", "Y1 Count", "Y1 Courses", "Y2 Count", "Y2 Courses", "Y3 Count", "Y3 Courses"])
+    for jp in diag["junior_preps"]:
+        values = [jp["name"]]
+        for yr in [1, 2, 3]:
+            yd = jp["years"].get(yr, {})
+            values += [yd.get("count", 0), ", ".join(yd.get("names", []))]
+        gap_row(values)
+
+    for col in ws2.columns:
+        max_len = max((len(str(c.value or "")) for c in col), default=0)
+        ws2.column_dimensions[col[0].column_letter].width = min(max_len + 2, 40)
+
+    buf = BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return send_file(
+        buf,
+        download_name="cmc_plan.xlsx",
+        as_attachment=True,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
 
 
 @app.route("/faculty/<name>")
