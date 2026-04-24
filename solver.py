@@ -2,7 +2,7 @@
 from collections import defaultdict
 from ortools.sat.python import cp_model
 
-from load_calc import section_weight
+from load_calc import count_key, section_weight
 from models import Assignment
 
 WEIGHT_SCALE = 100
@@ -203,16 +203,26 @@ def solve(faculty_list, courses, plan, cfg, year_range=(1, 3)):
 
 
 def _build_pre_counts(faculty_list, courses, plan, semesters):
-    """Cumulative counts before each semester: prior history + locked/manual in order."""
+    """Cumulative counts before each semester: prior history + locked/manual in order.
+
+    sci10 history is stored per-flavor in prior_teaching_counts, so the solver
+    aggregates the three flavor counts into a single sci10 total (used for weight
+    and new-prep calculations where the solver assigns flavor post-hoc).
+    """
     pre = {}
     for f in faculty_list:
         running = dict(f.prior_teaching_counts)
         for year, sem in semesters:
             for code in courses:
-                pre[(f.name, code, year, sem)] = running.get(code, 0)
+                if code == "sci10":
+                    count = sum(running.get(f"sci10_{fl}", 0) for fl in ("health", "neuro", "earth"))
+                else:
+                    count = running.get(code, 0)
+                pre[(f.name, code, year, sem)] = count
             for a in plan.assignments:
                 if a.faculty_name == f.name and a.year == year and a.semester == sem:
-                    running[a.course_code] = running.get(a.course_code, 0) + 1
+                    ck = count_key(a)
+                    running[ck] = running.get(ck, 0) + 1
     return pre
 
 

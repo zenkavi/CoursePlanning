@@ -6,7 +6,7 @@ from flask import Flask, jsonify, redirect, render_template, request, url_for
 
 from config import load_config
 from data_loader import load_courses, load_faculty
-from load_calc import all_faculty_loads, new_preps_in_semester
+from load_calc import all_faculty_loads, count_key, new_preps_in_semester
 from models import Assignment, Plan
 from solver import solve as run_solver
 
@@ -79,10 +79,11 @@ def compute_violations(faculty_list, loads, plan, courses, cfg) -> dict:
                     for a in sem_assigns:
                         course = courses.get(a.course_code)
                         if course and course.category in lab_cats:
-                            if cumulative.get(a.course_code, 0) == 0:
+                            if cumulative.get(count_key(a), 0) == 0:
                                 year_new_labs.add(a.course_code)
                     for a in sem_assigns:
-                        cumulative[a.course_code] = cumulative.get(a.course_code, 0) + 1
+                        ck = count_key(a)
+                        cumulative[ck] = cumulative.get(ck, 0) + 1
 
                 if len(year_new_labs) > 1:
                     names = ", ".join(
@@ -456,6 +457,37 @@ def unlock_all():
             a.locked = False
     save_plan(plan)
     return redirect(url_for("index"))
+
+
+@app.route("/set_flavor", methods=["POST"])
+def set_flavor():
+    data = request.get_json()
+    slot_id = data.get("slot_id", "")
+    flavor = data.get("flavor", "")
+
+    if flavor not in ("health", "neuro", "earth"):
+        return jsonify({"error": "Invalid flavor"}), 400
+
+    parts = slot_id.split("__")
+    if len(parts) != 4:
+        return jsonify({"error": "Invalid slot_id"}), 400
+
+    course_code, year, season, section = parts[0], int(parts[1]), parts[2], int(parts[3])
+    if course_code != "sci10":
+        return jsonify({"error": "Only sci10 assignments have flavors"}), 400
+
+    plan = load_plan()
+    existing = plan.get_assignment(course_code, year, season, section)
+    if existing is None:
+        return jsonify({"error": "No assignment found"}), 404
+
+    faculty = next((f for f in faculty_list if f.name == existing.faculty_name), None)
+    if faculty and not faculty.can_teach.get(f"sci10_{flavor}", False):
+        return jsonify({"error": f"{existing.faculty_name} is not qualified for sci10 {flavor}"}), 400
+
+    existing.flavor = flavor
+    save_plan(plan)
+    return jsonify({"ok": True})
 
 
 @app.route("/faculty/<name>")

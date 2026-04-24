@@ -77,7 +77,10 @@ class TestFacultyLoading:
         assert will.can_teach["sci111"] is True
 
     def test_prior_counts_has_expected_keys(self, faculty):
-        expected = {"sci10", "sci30a", "sci30b", "sci31a", "sci31b", "sci40", "sci50", "sci111", "sci112"}
+        expected = {
+            "sci10_health", "sci10_neuro", "sci10_earth",
+            "sci30a", "sci30b", "sci31a", "sci31b", "sci40", "sci50", "sci111", "sci112",
+        }
         for f in faculty:
             assert expected.issubset(f.prior_teaching_counts.keys()), (
                 f"{f.name} missing keys in prior_teaching_counts"

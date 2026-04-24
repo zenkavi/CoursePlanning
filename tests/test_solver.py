@@ -88,7 +88,7 @@ def test_solve_respects_junior_hard_cap():
     junior = Faculty(
         name="Junior", area="bio", research_method="exp", rank="junior",
         can_teach={"sci10": True, "sci10_health": True, "sci30a": True},
-        prior_teaching_counts={"sci10": 5, "sci30a": 5},
+        prior_teaching_counts={"sci10_health": 5, "sci30a": 5},
     )
     result = solve([junior], _courses(), Plan(), _cfg())
 

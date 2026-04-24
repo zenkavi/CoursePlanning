@@ -66,6 +66,14 @@ def load_faculty(
     return faculty_list
 
 
+# Maps teaching_history.csv column abbreviations → internal prior_teaching_counts keys
+_HISTORY_COL_MAP = {
+    "sci10h": "sci10_health",
+    "sci10n": "sci10_neuro",
+    "sci10e": "sci10_earth",
+}
+
+
 def _load_teaching_history(path: str) -> dict:
     """Return {faculty_name: {course_code: count}} from teaching_history.csv."""
     counts: dict = {}
@@ -75,7 +83,7 @@ def _load_teaching_history(path: str) -> dict:
             for row in reader:
                 name = row["Name"].strip()
                 counts[name] = {
-                    col: int(val or 0)
+                    _HISTORY_COL_MAP.get(col, col): int(val or 0)
                     for col, val in row.items()
                     if col != "Name"
                 }

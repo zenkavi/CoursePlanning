@@ -3,6 +3,17 @@ from collections import defaultdict
 from models import Faculty, Course, Assignment
 
 
+def count_key(assignment) -> str:
+    """Return the prior_teaching_counts key for this assignment.
+
+    sci10 history is tracked per-flavor (sci10_health / sci10_neuro / sci10_earth)
+    so the lookup key uses the assignment's flavor when available.
+    """
+    if assignment.course_code == "sci10" and assignment.flavor:
+        return f"sci10_{assignment.flavor}"
+    return assignment.course_code
+
+
 def section_weight(
     course: Course,
     faculty: Faculty,
@@ -47,31 +58,33 @@ def semester_load(
     """
     extra_mult = cfg.get("extra_section_weight_multiplier", 0.5)
 
-    # Group by course_code to apply extra_section_weight_multiplier
-    course_groups: dict = defaultdict(list)
-    for a in assignments:
-        course_groups[a.course_code].append(a)
+    # Track per-course occurrence count for extra_section_weight_multiplier.
+    # Multiplier applies by course_code (not flavor) — 2nd sci10 section still
+    # shares lecture logistics regardless of flavor.
+    course_occurrence: dict = defaultdict(int)
 
     total = 0.0
     items = []
-    for code, group in course_groups.items():
-        course = courses.get(code)
+    for a in assignments:
+        course = courses.get(a.course_code)
         if course is None:
             continue
-        times_before = cumulative_counts.get(code, 0)
+        ck = count_key(a)
+        times_before = cumulative_counts.get(ck, 0)
         base_w = section_weight(course, faculty, times_before, cfg)
 
-        for idx, a in enumerate(group):
-            multiplier = 1.0 if idx == 0 else extra_mult
-            actual_w = round(base_w * multiplier, 4)
-            total += actual_w
-            items.append({
-                "course_code": code,
-                "section_number": a.section_number,
-                "base_weight": base_w,
-                "actual_weight": actual_w,
-                "times_before": times_before,
-            })
+        idx = course_occurrence[a.course_code]
+        course_occurrence[a.course_code] += 1
+        multiplier = 1.0 if idx == 0 else extra_mult
+        actual_w = round(base_w * multiplier, 4)
+        total += actual_w
+        items.append({
+            "course_code": a.course_code,
+            "section_number": a.section_number,
+            "base_weight": base_w,
+            "actual_weight": actual_w,
+            "times_before": times_before,
+        })
 
     return {"total": round(total, 4), "items": items}
 
@@ -115,7 +128,8 @@ def all_faculty_loads(
             }
             # Update cumulative counts with this semester's assignments
             for a in sem_assignments:
-                cumulative[a.course_code] = cumulative.get(a.course_code, 0) + 1
+                ck = count_key(a)
+                cumulative[ck] = cumulative.get(ck, 0) + 1
 
         # Attach annual totals
         for year in range(year_range[0], year_range[1] + 1):
@@ -142,7 +156,8 @@ def new_preps_in_semester(
     bonus_count = cfg.get("new_prep_bonus_count", 2)
     new = []
     for a in assignments:
-        if cumulative_before.get(a.course_code, 0) < bonus_count:
+        ck = count_key(a)
+        if cumulative_before.get(ck, 0) < bonus_count:
             new.append(a.course_code)
     return new
 

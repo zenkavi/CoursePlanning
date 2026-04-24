@@ -98,6 +98,16 @@ async function doUnlockAll() {
   await fetch('/unlock_all', {method: 'POST'});
   location.reload();
 }
+async function doSetFlavor(slotId, flavor) {
+  const res = await fetch('/set_flavor', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({slot_id: slotId, flavor: flavor})
+  });
+  const d = await res.json();
+  if (d.ok) location.reload();
+  else alert(d.error || 'Flavor update failed');
+}
 </script>
 
 {# ── Category colour helpers ─────────────────────────────────────────── #}
@@ -119,6 +129,12 @@ async function doUnlockAll() {
   "upper_div_lecture":     "border-l-amber-300",
   "upper_div_lab":         "border-l-teal-300",
 } %}
+{% set FLAVOR_BADGE = {
+  "health": "bg-green-100 text-green-700",
+  "neuro":  "bg-purple-100 text-purple-700",
+  "earth":  "bg-amber-100 text-amber-700",
+} %}
+{% set FLAVOR_LETTER = {"health": "H", "neuro": "N", "earth": "E"} %}
 
 <div x-data="{}" class="flex" style="height: calc(100vh - 45px);">
 
@@ -233,6 +249,11 @@ async function doUnlockAll() {
             {% else %}text-slate-400{% endif %}">
             {{ "%.2f"|format(cl.get('total', 0)) }}
           </span>
+          {% if course.code == "sci10" and slot.assignment.flavor %}
+          <span class="shrink-0 text-[9px] font-bold px-0.5 rounded {{ FLAVOR_BADGE.get(slot.assignment.flavor, 'bg-slate-100 text-slate-500') }}">
+            {{ FLAVOR_LETTER.get(slot.assignment.flavor, '?') }}
+          </span>
+          {% endif %}
           <button onclick="doUnlock({{ slot.slot_id | tojson }})"
                   title="Click to unlock"
                   class="text-[9px] text-amber-500 hover:text-amber-700 cursor-pointer leading-none">🔒</button>
@@ -264,6 +285,11 @@ async function doUnlockAll() {
               {% else %}text-slate-400{% endif %}">
               {{ "%.2f"|format(cl.get('total', 0)) }}
             </span>
+            {% if course.code == "sci10" and slot.assignment.flavor %}
+            <span class="shrink-0 text-[9px] font-bold px-0.5 rounded {{ FLAVOR_BADGE.get(slot.assignment.flavor, 'bg-slate-100 text-slate-500') }}">
+              {{ FLAVOR_LETTER.get(slot.assignment.flavor, '?') }}
+            </span>
+            {% endif %}
             {% else %}
             <span class="flex-1 text-[10px] text-slate-300 italic">Unassigned</span>
             {% endif %}
@@ -276,6 +302,28 @@ async function doUnlockAll() {
                class="bg-white border border-slate-200 rounded shadow-lg max-h-64 overflow-y-auto text-xs">
 
             {% if slot.assignment %}
+            {% if course.code == "sci10" %}
+            {% set assigned_fac = faculty_list | selectattr("name", "equalto", slot.assignment.faculty_name) | first %}
+            <div class="px-3 py-0.5 text-[9px] text-slate-400 uppercase tracking-wide bg-slate-50 border-b border-slate-100">Flavor</div>
+            {% for fl in ["health", "neuro", "earth"] %}
+            {% set fl_key = "sci10_" ~ fl %}
+            {% set fl_qualified = assigned_fac.can_teach.get(fl_key, False) if assigned_fac else False %}
+            {% set fl_current = slot.assignment.flavor == fl %}
+            {% if fl_qualified %}
+            <button class="w-full text-left px-3 py-1.5 flex items-center gap-1.5 hover:bg-slate-50 border-b border-slate-100
+                     {% if fl_current %}font-semibold{% endif %}"
+                    @click='doSetFlavor({{ slot.slot_id | tojson }}, {{ fl | tojson }})'>
+              <span class="text-[9px] font-bold px-0.5 rounded {{ FLAVOR_BADGE.get(fl, '') }}">{{ FLAVOR_LETTER.get(fl, '') }}</span>
+              <span>{{ fl | capitalize }}{% if fl_current %} ✓{% endif %}</span>
+            </button>
+            {% else %}
+            <div class="w-full px-3 py-1.5 flex items-center gap-1.5 opacity-30 cursor-not-allowed select-none border-b border-slate-100">
+              <span class="text-[9px] font-bold px-0.5 rounded {{ FLAVOR_BADGE.get(fl, '') }}">{{ FLAVOR_LETTER.get(fl, '') }}</span>
+              <span>{{ fl | capitalize }}</span>
+            </div>
+            {% endif %}
+            {% endfor %}
+            {% endif %}
             <button class="w-full text-left px-3 py-1.5 text-slate-600 hover:bg-slate-50 border-b border-slate-100"
                     @click='doLock({{ slot.slot_id | tojson }})'>
               🔒 Lock assignment
