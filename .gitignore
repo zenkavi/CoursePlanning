@@ -6,3 +6,4 @@ __pycache__/
 .python-version
 data/plan.json
 data/faculty.csv
+settings.local.json
