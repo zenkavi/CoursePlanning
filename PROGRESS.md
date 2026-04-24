@@ -1,6 +1,6 @@
 # CMC Course Planner — Build Progress
 
-## Status: Step 9 of 11 complete (Lock/Unlock)
+## Status: Step 10 of 11 complete (Config Panel)
 
 ---
 
@@ -109,10 +109,18 @@
 
 ---
 
-## Up Next
+### Step 10 — Config Panel `d7da9f7`
+**Files:** `app.py`, `templates/planner.html`, `data/config.yaml`
 
-### Step 10 — Config Panel
-Sidebar with tunable parameters from `config.yaml`; "Re-solve" triggers a new solver run with updated weights.
+- `POST /update_config`: receives JSON, validates and coerces all 14 parameters (int for `junior_new_lab_preps_per_year_max`, `new_prep_bonus_count`, and all objective weights; float for the rest), updates the module-level `cfg` dict in place so all routes pick up changes immediately, writes back to `data/config.yaml`
+- Right-side drawer toggled by "Config" button in the top bar; toggle state managed via `Alpine.store('configPanel')` (called via plain `onclick` since the header has no `x-data` scope)
+- Drawer has three sections: Constraints (4 fields), Load Weights (4 fields), Objective Weights (6 fields) — all 14 SPEC parameters, pre-filled from current `cfg`
+- **Save** button: POSTs to `/update_config`, reloads page
+- **Save & Re-solve** button: POSTs to `/update_config`, then POSTs to `/solve` in sequence so the solver runs with the updated weights
+
+---
+
+## Up Next
 
 ### Step 11 — CSV Export
 Export current plan + gap report to CSV/Excel via `openpyxl`.

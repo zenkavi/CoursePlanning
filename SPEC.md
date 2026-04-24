@@ -251,7 +251,7 @@ These appear as a sidebar in the UI so the user can tweak and re-solve.
 7. ✅ **Diagnostics panel v1:** coverage %, unfilled sections, faculty load table
 8. ✅ **OR-Tools solver:** "Suggest" button fills non-locked foundational/sci111/112 slots
 9. ✅ **Lock/unlock** + re-run on unlocked subset
-10. ⬜ **Config panel:** tweakable parameters with "re-solve"
+10. ✅ **Config panel:** tweakable parameters with "re-solve"
 11. ⬜ **CSV export** of final plan + gap report
 12. ⬜ *(Deferred)* Sabbatical/availability UI
 13. ⬜ *(Deferred)* Edit faculty qualifications in-app
