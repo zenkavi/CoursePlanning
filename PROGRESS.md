@@ -1,6 +1,6 @@
 # CMC Course Planner — Build Progress
 
-## Status: Step 6 of 11 complete (constraint validator)
+## Status: Step 7 of 11 complete (diagnostics panel)
 
 ---
 
@@ -63,16 +63,20 @@
 - Returns `{faculty_name: {items, has_error, has_warning, count}}`; used by `index()` and passed to template
 - Sidebar faculty rows show a coloured count badge (red for hard-cap errors, amber for warnings) with a `title` tooltip listing all violation descriptions
 
+### Step 7 — Diagnostics Panel v1
+**Files:** `app.py`, `templates/diagnostics.html`
+
+- `build_diagnostics()` in `app.py` computes all panel data and passes it to the template; no separate `diagnostics.py` (diagnostics logic is small enough to live in `app.py`)
+- **Coverage** — 6 cards (one per semester), showing filled/26 with a colour-coded progress bar
+- **Unfilled sections** — table of every empty slot with semester, course, and section number; placeholder slots marked
+- **Course supply/demand** — non-placeholder courses sorted by sections-over-3-years ÷ qualified-faculty-count; ratio ≥ 2.0 red, ≥ 1.5 amber, lower green
+- **Faculty loads** — all 20 faculty (juniors first), fall/spring/annual columns per year, same status colours as sidebar
+- **Junior new-prep counts** — per-year count of brand-new courses (zero prior history, matching `compute_violations` logic); red with `!` badge if > 1 in a year
+- Suggestions feature deferred to post-MVP
+
 ---
 
 ## Up Next
-
-### Step 7 — Diagnostics Panel v1
-- Coverage % per semester
-- Unfilled sections table
-- Faculty load table
-- Bottleneck courses (worst supply/demand ratio)
-- Junior new-prep counts per year
 
 ### Step 8 — OR-Tools Solver
 "Suggest assignments" button runs CP-SAT on non-locked, non-manual slots.

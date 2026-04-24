@@ -24,11 +24,10 @@ This is a diagnostic/exploratory tool as much as an optimization tool. Unfilled 
 
 ```
 CoursePlanning/
-├── app.py                   # Flask entry point, routes
+├── app.py                   # Flask entry point, routes, diagnostics logic
 ├── solver.py                # OR-Tools CP-SAT model
 ├── models.py                # Faculty, Course, Assignment, Plan dataclasses
 ├── load_calc.py             # Weighted load calculation with new-prep logic
-├── diagnostics.py           # Gap analysis, bottleneck detection
 ├── config.py                # Load tunable parameters from config.yaml
 ├── data_loader.py           # CSV/YAML → dataclasses
 ├── data/
@@ -235,7 +234,7 @@ These appear as a sidebar in the UI so the user can tweak and re-solve.
 - Faculty load table: who's over, under, at target
 - Bottleneck courses: courses where supply/demand ratio is worst
 - Junior faculty new-prep counts per year
-- Suggestions (e.g. "If Paul takes one more section of sci10, coverage goes from 85% to 92%")
+- Suggestions (e.g. "If Paul takes one more section of sci10, coverage goes from 85% to 92%") — deferred to post-MVP
 
 ---
 

@@ -1,5 +1,193 @@
 {% extends "base.html" %}
 {% block title %}Diagnostics — CMC Course Planner{% endblock %}
 {% block content %}
-<div class="p-8 text-slate-400 text-center">Diagnostics panel — coming in step 7.</div>
+<div class="max-w-7xl mx-auto p-6 space-y-8">
+
+  {# ── Coverage Summary ─────────────────────────────────────────────── #}
+  <section>
+    <h2 class="text-sm font-semibold text-slate-700 mb-3">Coverage</h2>
+    <div class="grid grid-cols-6 gap-3">
+      {% for sem in coverage %}
+      <div class="bg-white rounded-lg border border-slate-200 p-3">
+        <div class="text-xs text-slate-500 mb-1">{{ sem.label }}</div>
+        <div class="text-2xl font-bold
+          {% if sem.pct == 100 %}text-green-600
+          {% elif sem.pct > 0 %}text-amber-600
+          {% else %}text-red-500{% endif %}">
+          {{ sem.filled }}/{{ sem.total }}
+        </div>
+        <div class="mt-1.5 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+          <div class="h-full rounded-full
+            {% if sem.pct == 100 %}bg-green-500
+            {% elif sem.pct > 0 %}bg-amber-400
+            {% else %}bg-red-400{% endif %}"
+            style="width: {{ sem.pct }}%"></div>
+        </div>
+        <div class="text-xs text-slate-400 mt-1">{{ sem.pct }}%</div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  {# ── Unfilled + Bottlenecks ───────────────────────────────────────── #}
+  <div class="grid grid-cols-2 gap-6">
+
+    <section>
+      <h2 class="text-sm font-semibold text-slate-700 mb-3">
+        Unfilled Sections
+        <span class="ml-1 text-xs font-normal text-slate-400">({{ unfilled|length }})</span>
+      </h2>
+      {% if unfilled %}
+      <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
+        <table class="w-full text-xs">
+          <thead class="bg-slate-50 text-slate-400 uppercase text-[10px] tracking-wide">
+            <tr>
+              <th class="text-left px-3 py-2">Semester</th>
+              <th class="text-left px-3 py-2">Course</th>
+              <th class="text-left px-3 py-2">§</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            {% for row in unfilled %}
+            <tr class="hover:bg-slate-50">
+              <td class="px-3 py-1.5 text-slate-500 whitespace-nowrap">{{ row.semester_label }}</td>
+              <td class="px-3 py-1.5">
+                {{ row.course_name }}
+                {% if row.is_placeholder %}<span class="text-slate-400 text-[10px]">(placeholder)</span>{% endif %}
+              </td>
+              <td class="px-3 py-1.5 text-slate-400">{{ row.section }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="bg-white rounded-lg border border-slate-200 p-6 text-center text-sm text-green-600 font-medium">
+        All sections filled
+      </div>
+      {% endif %}
+    </section>
+
+    <section>
+      <h2 class="text-sm font-semibold text-slate-700 mb-3">Course Supply / Demand</h2>
+      <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
+        <table class="w-full text-xs">
+          <thead class="bg-slate-50 text-slate-400 uppercase text-[10px] tracking-wide">
+            <tr>
+              <th class="text-left px-3 py-2">Course</th>
+              <th class="text-right px-3 py-2">Qualified</th>
+              <th class="text-right px-3 py-2">Sections (3yr)</th>
+              <th class="text-right px-3 py-2">Ratio</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            {% for row in bottlenecks %}
+            <tr class="hover:bg-slate-50">
+              <td class="px-3 py-1.5">{{ row.name }}</td>
+              <td class="px-3 py-1.5 text-right text-slate-500">{{ row.qualified }}</td>
+              <td class="px-3 py-1.5 text-right text-slate-500">{{ row.total_sections }}</td>
+              <td class="px-3 py-1.5 text-right font-mono
+                {% if row.ratio is none %}text-slate-300
+                {% elif row.ratio >= 2.0 %}text-red-600 font-semibold
+                {% elif row.ratio >= 1.5 %}text-amber-600
+                {% else %}text-green-600{% endif %}">
+                {% if row.ratio is none %}—{% else %}{{ row.ratio }}{% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p class="text-[10px] text-slate-400 mt-1.5 px-1">Ratio = sections over 3 years ÷ qualified faculty. Higher = tighter supply.</p>
+    </section>
+
+  </div>
+
+  {# ── Faculty Load Table ───────────────────────────────────────────── #}
+  <section>
+    <h2 class="text-sm font-semibold text-slate-700 mb-3">Faculty Loads (annual)</h2>
+    <div class="bg-white rounded-lg border border-slate-200 overflow-x-auto">
+      <table class="w-full text-xs whitespace-nowrap">
+        <thead class="bg-slate-50 text-slate-400 uppercase text-[10px] tracking-wide">
+          <tr>
+            <th class="text-left px-3 py-2">Faculty</th>
+            <th class="text-center px-2 py-2">Rank</th>
+            <th class="text-left px-3 py-2">Area</th>
+            {% for year in [1, 2, 3] %}
+            <th class="text-center px-3 py-2 border-l border-slate-200" colspan="3">Year {{ year }}</th>
+            {% endfor %}
+          </tr>
+          <tr class="text-[9px] text-slate-400">
+            <th colspan="3"></th>
+            {% for year in [1, 2, 3] %}
+            <th class="text-center px-2 py-1 border-l border-slate-200">Fall</th>
+            <th class="text-center px-2 py-1">Spr</th>
+            <th class="text-center px-2 py-1 font-semibold text-slate-500">Ann</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for row in faculty_loads_table %}
+          <tr class="hover:bg-slate-50">
+            <td class="px-3 py-1.5 font-medium">{{ row.name }}</td>
+            <td class="px-2 py-1.5 text-center text-slate-400">{{ row.rank }}</td>
+            <td class="px-3 py-1.5 text-slate-400 max-w-36 truncate">{{ row.area }}</td>
+            {% for year in [1, 2, 3] %}
+            {% set yd = row.years[year] %}
+            <td class="px-2 py-1.5 text-center text-slate-400 border-l border-slate-100 font-mono">{{ yd.fall if yd.fall > 0 else '—' }}</td>
+            <td class="px-2 py-1.5 text-center text-slate-400 font-mono">{{ yd.spring if yd.spring > 0 else '—' }}</td>
+            <td class="px-2 py-1.5 text-center font-mono font-semibold
+              {% if yd.status == 'red' %}text-red-600
+              {% elif yd.status == 'yellow-over' %}text-amber-600
+              {% elif yd.status == 'green' %}text-green-600
+              {% elif yd.status == 'yellow-under' %}text-amber-500
+              {% else %}text-slate-300{% endif %}">
+              {{ yd.annual if yd.annual > 0 else '—' }}
+            </td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  {# ── Junior New-Prep Counts ───────────────────────────────────────── #}
+  <section>
+    <h2 class="text-sm font-semibold text-slate-700 mb-3">Junior New-Prep Counts per Year</h2>
+    <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
+      <table class="w-full text-xs">
+        <thead class="bg-slate-50 text-slate-400 uppercase text-[10px] tracking-wide">
+          <tr>
+            <th class="text-left px-3 py-2">Faculty</th>
+            {% for year in [1, 2, 3] %}
+            <th class="text-center px-6 py-2">Year {{ year }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for row in junior_preps %}
+          <tr class="hover:bg-slate-50">
+            <td class="px-3 py-1.5 font-medium">{{ row.name }}</td>
+            {% for year in [1, 2, 3] %}
+            {% set yd = row.years[year] %}
+            <td class="px-6 py-1.5 text-center">
+              {% if yd.count > 1 %}
+              <span class="text-red-600 font-semibold" title="{{ yd.names | join(', ') }}">{{ yd.count }} !</span>
+              {% elif yd.count == 1 %}
+              <span class="text-slate-600" title="{{ yd.names | join(', ') }}">1</span>
+              {% else %}
+              <span class="text-slate-300">0</span>
+              {% endif %}
+            </td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="text-[10px] text-slate-400 mt-1.5 px-1">A new prep is a course with zero prior teaching history at the start of the year. Red = more than 1 new prep in a year (constraint violation).</p>
+  </section>
+
+</div>
 {% endblock %}

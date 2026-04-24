@@ -6,7 +6,7 @@ from flask import Flask, jsonify, redirect, render_template, request, url_for
 
 from config import load_config
 from data_loader import load_courses, load_faculty
-from load_calc import all_faculty_loads
+from load_calc import all_faculty_loads, new_preps_in_semester
 from models import Assignment, Plan
 
 app = Flask(__name__)
@@ -261,9 +261,127 @@ def unassign():
     return jsonify({"ok": True})
 
 
+def build_diagnostics(plan: Plan) -> dict:
+    loads = all_faculty_loads(faculty_list, plan.assignments, courses, cfg)
+    semesters = build_grid(plan)
+
+    # 1. Coverage per semester
+    coverage = []
+    for sem in semesters:
+        total = sem["total_sections"]
+        filled = sum(
+            1 for g in sem["groups"]
+            for s in g["sections"]
+            if s["assignment"] is not None
+        )
+        coverage.append({
+            "label": sem["label"],
+            "filled": filled,
+            "total": total,
+            "pct": round(filled / total * 100) if total else 0,
+        })
+
+    # 2. Unfilled sections
+    unfilled = []
+    for sem in semesters:
+        for g in sem["groups"]:
+            for s in g["sections"]:
+                if s["assignment"] is None:
+                    unfilled.append({
+                        "semester_label": sem["label"],
+                        "course_name": g["course"].display_name,
+                        "section": s["section_number"],
+                        "is_placeholder": g["course"].is_placeholder,
+                    })
+
+    # 3. Faculty load table — sorted juniors first then seniors, alphabetical within
+    target = cfg.get("target_annual_load", 4.0)
+    hard_cap = cfg.get("junior_faculty_hard_cap", 2.0) * 2
+    soft_cap = cfg.get("senior_faculty_soft_cap", 2.0) * 2
+
+    faculty_loads_table = []
+    for f in sorted(faculty_list, key=lambda x: (x.rank, x.name)):
+        row = {"name": f.name, "rank": "J" if f.is_junior() else "S", "area": f.area, "years": {}}
+        cap = hard_cap if f.is_junior() else soft_cap
+        for year in range(1, 4):
+            fall_t = loads.get(f.name, {}).get((year, "fall"), {}).get("total", 0.0)
+            spring_t = loads.get(f.name, {}).get((year, "spring"), {}).get("total", 0.0)
+            annual = round(fall_t + spring_t, 2)
+            if annual > cap + 1.0:
+                status = "red"
+            elif annual > cap:
+                status = "yellow-over"
+            elif annual >= target - 0.5:
+                status = "green"
+            elif annual > 0:
+                status = "yellow-under"
+            else:
+                status = "empty"
+            row["years"][year] = {
+                "fall": round(fall_t, 2),
+                "spring": round(spring_t, 2),
+                "annual": annual,
+                "status": status,
+            }
+        faculty_loads_table.append(row)
+
+    # 4. Bottleneck courses (non-placeholder only), sorted by sections/faculty ratio desc
+    bottlenecks = []
+    for code, course in courses.items():
+        if course.is_placeholder:
+            continue
+        qualified = sum(1 for f in faculty_list if f.can_teach_course(code))
+        total_sections = (
+            course.sections_per_semester.get("fall", 0)
+            + course.sections_per_semester.get("spring", 0)
+        ) * 3
+        ratio = round(total_sections / qualified, 2) if qualified else None
+        bottlenecks.append({
+            "name": course.display_name,
+            "qualified": qualified,
+            "total_sections": total_sections,
+            "ratio": ratio,
+        })
+    bottlenecks.sort(key=lambda x: (x["ratio"] is None, -(x["ratio"] or 0)))
+
+    # 5. Junior new-prep counts per year (brand-new = zero prior history, matching constraint logic)
+    junior_preps = []
+    for f in faculty_list:
+        if not f.is_junior():
+            continue
+        cumulative = dict(f.prior_teaching_counts)
+        years_data = {}
+        for year in range(1, 4):
+            year_new = set()
+            for sem in ("fall", "spring"):
+                sem_assigns = [
+                    a for a in plan.assignments
+                    if a.faculty_name == f.name and a.year == year and a.semester == sem
+                ]
+                for a in sem_assigns:
+                    if cumulative.get(a.course_code, 0) == 0:
+                        year_new.add(a.course_code)
+                    cumulative[a.course_code] = cumulative.get(a.course_code, 0) + 1
+            years_data[year] = {
+                "count": len(year_new),
+                "names": [courses[c].display_name for c in year_new if c in courses],
+            }
+        junior_preps.append({"name": f.name, "years": years_data})
+
+    return {
+        "coverage": coverage,
+        "unfilled": unfilled,
+        "faculty_loads_table": faculty_loads_table,
+        "bottlenecks": bottlenecks,
+        "junior_preps": junior_preps,
+    }
+
+
 @app.route("/diagnostics")
 def diagnostics():
-    return render_template("diagnostics.html")
+    plan = load_plan()
+    data = build_diagnostics(plan)
+    return render_template("diagnostics.html", **data)
 
 
 @app.route("/faculty/<name>")
