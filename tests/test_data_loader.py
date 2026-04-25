@@ -76,6 +76,15 @@ class TestFacultyLoading:
         will = next(f for f in faculty if f.name == "Will")
         assert will.can_teach["sci111"] is True
 
+    def test_missing_history_csv_does_not_raise(self):
+        # _load_teaching_history silently swallows FileNotFoundError; faculty
+        # should still load and every member should get an empty prior count dict.
+        result = load_faculty(history_csv="/nonexistent/teaching_history.csv")
+        assert len(result) > 0
+        assert all(f.prior_teaching_counts == {} for f in result), (
+            "Expected empty prior_teaching_counts when history file is absent"
+        )
+
     def test_prior_counts_has_expected_keys(self, faculty):
         expected = {
             "sci10_health", "sci10_neuro", "sci10_earth",
