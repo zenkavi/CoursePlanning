@@ -56,7 +56,7 @@ CoursePlanning/
 ## Data Model
 
 ### Faculty
-- `name`, `area`, `research_method`, `rank` ("junior" | "senior")
+- `name`, `area`, `research_method`, `rank` ("junior" | "senior" | "visiting" | "lab director")
 - `can_teach`: `{course_code: bool}` — includes `sci10`, `sci10_health`, `sci10_neuro`, `sci10_earth`
 - `prior_teaching_counts`: `{course_code: int}` from `teaching_history.csv` — sci10 history is stored per-flavor (`sci10_health`, `sci10_neuro`, `sci10_earth`); no generic `sci10` key
 - `unavailable_semesters`: list of `(year, semester)` tuples (deferred; empty for MVP)
@@ -77,6 +77,7 @@ CoursePlanning/
 ### Plan
 - `assignments`: list of Assignment
 - `year_range`: (start_year, end_year) — default (1, 3)
+- `sci10_section_overrides`: `{"year__season": int}` — per-semester SCI 10 count; defaults to `courses.yaml` value when key absent
 
 ---
 
@@ -147,15 +148,17 @@ The faculty CSV uses slightly different column names than the internal course co
 
 ### Hard-with-flag (solver avoids, warns if violated)
 - Senior faculty weighted load > 2.0 per semester → allowed but counted as an objective penalty
+- Visiting faculty weighted load > 2.5 per semester → allowed but counted as an objective penalty
+- Lab director weighted load > 1.67 per semester → allowed but counted as an objective penalty
 - Junior faculty: > 1 new lab prep per academic year
 
 ### Soft (objective function, weighted)
 - Maximize section coverage (highest weight)
 - Minimize total new preps for junior faculty (high weight)
-- Balance weighted load across faculty (medium weight)
+- Balance weighted load across faculty toward each rank's per-semester target (medium weight)
 - sci10 flavor diversity per semester (low weight)
 - Prefer senior faculty for first-time lab preps (low weight)
-- Minimize senior faculty going over 2.0 (medium weight)
+- Minimize non-junior faculty going over their soft cap (medium weight)
 
 ---
 
@@ -190,18 +193,22 @@ Cumulative counts carry forward across semesters: a faculty who taught sci10 onc
 ```yaml
 junior_faculty_hard_cap: 2.0
 senior_faculty_soft_cap: 2.0
+visiting_faculty_soft_cap: 2.5
+visiting_faculty_target_annual: 5.0
+lab_director_soft_cap: 1.67
+lab_director_target_annual: 3.33
 junior_new_lab_preps_per_year_max: 1
 new_prep_bonus_count: 2
 new_prep_weight: 2.0
 foundational_experienced_weight: 1.67
 extra_section_weight_multiplier: 0.5
-target_annual_load: 4.0
+target_annual_load: 4.0  # applies to junior and senior
 
 objective_weights:
   section_coverage: 1000
   junior_new_preps: 100
   load_balance: 50
-  senior_over_cap: 75
+  senior_over_cap: 75   # applies to all non-junior soft caps
   sci10_flavor_diversity: 10
   senior_takes_new_preps: 25
 ```

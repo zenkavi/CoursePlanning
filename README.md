@@ -57,7 +57,7 @@ All editable data lives in `data/`:
 
 ### Adding or removing a faculty member
 
-1. Add/remove a row in `faculty.csv` with a 1/0 for each course they can teach.
+1. Add/remove a row in `faculty.csv` with a 1/0 for each course they can teach. Valid values for the `Rank` column: `junior`, `senior`, `visiting`, `lab director`.
 2. Add/remove a corresponding row in `teaching_history.csv` (all zeros for a new hire).
 3. Restart the server — faculty data is loaded at startup.
 
@@ -73,10 +73,14 @@ Edit `data/config.yaml`. Key parameters:
 
 | Parameter | Default | Meaning |
 |---|---|---|
-| `junior_faculty_hard_cap` | 2.0 | Max load per semester for junior faculty |
+| `junior_faculty_hard_cap` | 2.0 | Max load per semester for junior faculty (hard) |
 | `senior_faculty_soft_cap` | 2.0 | Soft load cap per semester for senior faculty |
+| `visiting_faculty_soft_cap` | 2.5 | Soft load cap per semester for visiting faculty |
+| `visiting_faculty_target_annual` | 5.0 | Target annual load for visiting faculty |
+| `lab_director_soft_cap` | 1.67 | Soft load cap per semester for lab directors |
+| `lab_director_target_annual` | 3.33 | Target annual load for lab directors |
 | `junior_new_lab_preps_per_year_max` | 1 | Max new lab preps per year for junior faculty |
-| `target_annual_load` | 4.0 | Target total load per year |
+| `target_annual_load` | 4.0 | Target annual load for junior and senior faculty |
 | `new_prep_weight` | 2.0 | Load weight for a course taught fewer than `new_prep_bonus_count` times |
 | `new_prep_bonus_count` | 2 | Number of times a course must be taught before it drops to experienced weight |
 | `foundational_experienced_weight` | 1.67 | Load weight for an experienced foundational course section |
@@ -98,7 +102,7 @@ If a faculty member teaches two sections of the same course in the same semester
 The app tracks three types of violations shown as warning badges on the faculty sidebar:
 
 - **Hard cap exceeded** (error): a junior faculty member's semester load exceeds `junior_faculty_hard_cap`.
-- **Senior soft cap exceeded** (warning): a senior faculty member's semester load exceeds `senior_faculty_soft_cap`.
+- **Soft cap exceeded** (warning): a senior, visiting, or lab director faculty member's semester load exceeds their rank-specific soft cap.
 - **Too many new lab preps** (warning): a junior faculty member has more than `junior_new_lab_preps_per_year_max` new lab preps in a single academic year.
 
 ## Running tests

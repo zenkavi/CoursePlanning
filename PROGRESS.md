@@ -129,8 +129,6 @@
 
 ---
 
----
-
 ### Dynamic SCI 10 section count `543f7c1`
 **Files:** `data/courses.yaml`, `models.py`, `app.py`, `solver.py`, `templates/planner.html`, `tests/test_data_loader.py`
 
@@ -146,6 +144,19 @@
 
 - The 🔒 unlock button used `onclick="doUnlock({{ slot_id | tojson }})"` — the JSON string's outer double quotes terminated the HTML attribute early, silently breaking the click handler
 - Fixed by switching to single-quoted attribute: `onclick='doUnlock(...)'`, consistent with all other `tojson` event handlers in the template
+
+### Visiting faculty and lab director rank types `27785ba`
+**Files:** `config.py`, `data/config.yaml`, `models.py`, `load_calc.py`, `app.py`, `solver.py`, `templates/planner.html`
+
+- New ranks: `"visiting"` (5.0 units/yr, 2.5/sem soft cap) and `"lab director"` (3.33 units/yr, 1.67/sem soft cap); both soft-capped like senior
+- `Faculty.is_visiting()`, `Faculty.is_lab_director()`, `Faculty.rank_label` property (J / S / V / LD)
+- `cap_and_target_per_sem(faculty, cfg)` exported from `load_calc.py`; used by `_load_status`, `compute_violations`, annual load badges, diagnostics table, and solver
+- `config.yaml` / `config.py`: four new params with defaults (`visiting_faculty_soft_cap`, `visiting_faculty_target_annual`, `lab_director_soft_cap`, `lab_director_target_annual`)
+- Solver per-semester penalty loop now uses per-rank cap and target; soft-cap penalty applies to all non-junior ranks
+- Sidebar rank badge: 4 colours (sky=J, slate=S, amber=V, teal=LD)
+- Config panel exposes all four new params
+- Sort order in diagnostics/sidebar: J → S → V → LD
+- CSV: add rows with `Rank = visiting` or `Rank = lab director`
 
 ---
 
@@ -169,7 +180,7 @@ MVP is complete. Remaining items are deferred post-MVP.
 | State persistence | `data/plan.json` | Simple, no DB dependency for MVP |
 | Load weight fractions | Scaled ×100 for CP-SAT | OR-Tools CP-SAT requires integers |
 | Extra-section multiplier | 0.5 (configurable) | 2nd section of same course shares prep |
-| sci10 in solver | 8 generic slots | Flavor tracked on assignment, not as separate course codes |
+| sci10 in solver | N generic slots (default 10, per-semester overrides in plan.json) | Flavor tracked on assignment, not as separate course codes |
 | `sci11` → `sci111` | Mapped in `data_loader.py` | CSV has typo vs. spec course code |
 | `faculty.csv` gitignored | Yes | Treat as potentially sensitive faculty data |
 | `plan.json` gitignored | Yes | Runtime state, not source |
