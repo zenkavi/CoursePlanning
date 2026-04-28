@@ -86,7 +86,7 @@ CoursePlanning/
 
 | Code   | Display   | Fall sections | Spring sections |
 |--------|-----------|---------------|-----------------|
-| sci10  | SCI 10    | 8             | 8               |
+| sci10  | SCI 10    | 10            | 10              |
 | sci30a | SCI 30A   | 1             | 3               |
 | sci30b | SCI 30B   | 1             | 3               |
 | sci31a | SCI 31A   | 3             | 1               |
@@ -110,10 +110,12 @@ CoursePlanning/
 | udl_lec_1 | upper_div_lecture     | 1    | 1      | 1.0    |
 | udl_lec_2 | upper_div_lecture     | 1    | 1      | 1.0    |
 
-**Total per semester: 22 solver-assigned + 4 manually-assigned = 26 sections.**
+**Total per semester: 24 solver-assigned + 4 manually-assigned = 28 sections (default).**
+
+SCI 10 section count is adjustable per semester via `+`/`−` buttons in the grid; the count is stored in `plan.json` as `sci10_section_overrides` and defaults to 10 if no override is set.
 
 ### sci10 Flavor Handling
-Faculty qualifications differ by flavor (health / neuro / earth). The CSV encodes who can teach which flavor. The solver treats sci10 as 8 generic sections per semester, but:
+Faculty qualifications differ by flavor (health / neuro / earth). The CSV encodes who can teach which flavor. The solver treats sci10 as N generic sections per semester (where N is the per-semester count), but:
 - Each assignment picks a specific flavor based on faculty qualification
 - Soft preference: ≥1 section of each flavor per semester
 

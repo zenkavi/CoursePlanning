@@ -1,6 +1,6 @@
 # CMC Course Planner — Build Progress
 
-## Status: Step 11 of 11 complete — MVP done
+## Status: MVP complete + post-MVP enhancements in progress
 
 ---
 
@@ -126,6 +126,26 @@
 - **Sheet 1 — Plan**: one row per assignment sorted by year → semester (fall first) → course → section; columns: Faculty, Rank, Course, Year, Semester, Section, Flavor, Locked, Manual, Base Weight, Actual Weight. Weights pulled from `all_faculty_loads` item detail so new-prep bonus timing is accurate.
 - **Sheet 2 — Gap Report**: five sections with bold section/column headers — Coverage, Unfilled Sections, Faculty Loads (with colour-coded cells), Bottleneck Courses, Junior New-Prep Counts
 - "Export xlsx" `<a href="/export">` replaces the formerly disabled "Export CSV" stub button
+
+---
+
+---
+
+### Dynamic SCI 10 section count `543f7c1`
+**Files:** `data/courses.yaml`, `models.py`, `app.py`, `solver.py`, `templates/planner.html`, `tests/test_data_loader.py`
+
+- Default raised from 8 → 10 sections per semester in `courses.yaml`
+- `Plan.sci10_section_overrides` dict (serialized in `plan.json`) stores per-semester overrides keyed `"year__season"`; old plans without the field default to 10 on load
+- `_sci10_count(plan, year, season)` helper in `app.py`; used by `build_grid`, `build_diagnostics` (coverage totals and bottleneck ratio), and the solver
+- `POST /set_sci10_sections`: accepts `year`, `season`, `delta` (+1/−1); clamps to 1–20; blocks removal if the last section has an assignment
+- `+`/`−` buttons on the SCI 10 group header in each semester column
+- 3 tests updated to reflect new default (8→10); 54 tests total
+
+### Bug fix: unlock button broken by double-quoted onclick `6dd8ed6`
+**Files:** `templates/planner.html`
+
+- The 🔒 unlock button used `onclick="doUnlock({{ slot_id | tojson }})"` — the JSON string's outer double quotes terminated the HTML attribute early, silently breaking the click handler
+- Fixed by switching to single-quoted attribute: `onclick='doUnlock(...)'`, consistent with all other `tojson` event handlers in the template
 
 ---
 
