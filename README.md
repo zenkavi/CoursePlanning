@@ -30,13 +30,14 @@ rm data/plan.json
 **Grid view** (`/`) — A 6-column schedule (Fall Y1 through Spring Y3) with every course section as a slot. Click a slot to assign a faculty member from the dropdown. The faculty sidebar shows annual load badges (Y1/Y2/Y3) colour-coded by status; click a faculty name to highlight all their assignments in the grid. Warning badges appear on faculty with constraint violations.
 
 - **Lock/unlock** individual assignments (or all at once) to pin them before running the solver.
+- **Sci10 section count** — use the `+`/`−` buttons on the SCI 10 group header in any semester to add or remove sections (default 10 per semester, adjustable per semester up to 20).
 - **Sci10 flavor** — each Sci10 section can be tagged health/neuro/earth from the assignment dropdown.
 - **Solver** — the "Solve" button auto-fills remaining unfilled slots using a constraint solver; locked and manually-placed assignments are preserved.
 - **Config panel** — edit load parameters (caps, weights) from the UI and re-solve without touching `config.yaml`.
 - **Export** — download the current plan and a gap report as an xlsx file.
 
 **Diagnostics view** (`/diagnostics`) — Read-only summary of the current plan:
-- Coverage per semester (filled / 26 sections)
+- Coverage per semester (filled / total sections; total reflects any sci10 count adjustments)
 - All unfilled slots
 - Course supply/demand ratios (which courses have the fewest qualified faculty relative to section count)
 - Faculty load table with fall/spring/annual breakdown
@@ -62,7 +63,9 @@ All editable data lives in `data/`:
 
 ### Changing course section counts
 
-Edit `sections_per_semester` in `data/courses.yaml` and restart the server.
+For **SCI 10**, use the `+`/`−` buttons on the SCI 10 group header in each semester column — no restart needed, counts are saved per semester in `plan.json`.
+
+For all other courses, edit `sections_per_semester` in `data/courses.yaml` and restart the server.
 
 ### Tuning load parameters
 
@@ -104,8 +107,8 @@ The app tracks three types of violations shown as warning badges on the faculty 
 pytest
 ```
 
-53 tests covering data loading, load calculation, and the solver.
+54 tests covering data loading, load calculation, and the solver.
 
 ## Project status
 
-Steps completed: 1–11 (data loading, load calc, grid rendering, manual assignment UI, live load display, constraint validator, diagnostics panel, solver, lock/unlock, config panel, xlsx export). See `PROGRESS.md` for details.
+MVP complete (steps 1–11). Post-MVP: dynamic SCI 10 section count, unlock button bug fix. See `PROGRESS.md` for details.

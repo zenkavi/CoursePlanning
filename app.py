@@ -120,6 +120,12 @@ def compute_violations(faculty_list, loads, plan, courses, cfg) -> dict:
     return result
 
 
+def _sci10_count(plan: Plan, year: int, season: str) -> int:
+    key = f"{year}__{season}"
+    default = courses["sci10"].sections_in(season) if "sci10" in courses else 10
+    return plan.sci10_section_overrides.get(key, default)
+
+
 def build_grid(plan: Plan, year_range: tuple = (1, 3)) -> list:
     """Return the semester/slot structure the template renders.
 
@@ -134,7 +140,7 @@ def build_grid(plan: Plan, year_range: tuple = (1, 3)) -> list:
                 course = courses.get(code)
                 if course is None:
                     continue
-                n = course.sections_in(season)
+                n = _sci10_count(plan, year, season) if code == "sci10" else course.sections_in(season)
                 if n == 0:
                     continue
                 sections = []
@@ -346,10 +352,17 @@ def build_diagnostics(plan: Plan) -> dict:
         if course.is_placeholder:
             continue
         qualified = sum(1 for f in faculty_list if f.can_teach_course(code))
-        total_sections = (
-            course.sections_per_semester.get("fall", 0)
-            + course.sections_per_semester.get("spring", 0)
-        ) * 3
+        if code == "sci10":
+            total_sections = sum(
+                _sci10_count(plan, y, s)
+                for y in range(plan.year_range[0], plan.year_range[1] + 1)
+                for s in ("fall", "spring")
+            )
+        else:
+            total_sections = (
+                course.sections_per_semester.get("fall", 0)
+                + course.sections_per_semester.get("spring", 0)
+            ) * 3
         ratio = round(total_sections / qualified, 2) if qualified else None
         bottlenecks.append({
             "name": course.display_name,
@@ -501,6 +514,33 @@ def set_flavor():
     existing.flavor = flavor
     save_plan(plan)
     return jsonify({"ok": True})
+
+
+@app.route("/set_sci10_sections", methods=["POST"])
+def set_sci10_sections():
+    data = request.get_json()
+    year = data.get("year")
+    season = data.get("season")
+    delta = data.get("delta")
+
+    if not isinstance(year, int) or season not in ("fall", "spring"):
+        return jsonify({"error": "Invalid year or season"}), 400
+    if delta not in (1, -1):
+        return jsonify({"error": "delta must be 1 or -1"}), 400
+
+    plan = load_plan()
+    current = _sci10_count(plan, year, season)
+    new_count = current + delta
+
+    if new_count < 1 or new_count > 20:
+        return jsonify({"error": "Section count must be between 1 and 20"}), 400
+
+    if delta == -1 and plan.get_assignment("sci10", year, season, current) is not None:
+        return jsonify({"error": "Cannot remove a section that has an assignment"}), 400
+
+    plan.sci10_section_overrides[f"{year}__{season}"] = new_count
+    save_plan(plan)
+    return jsonify({"ok": True, "count": new_count})
 
 
 @app.route("/update_config", methods=["POST"])

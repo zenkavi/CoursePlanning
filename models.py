@@ -83,6 +83,7 @@ class Assignment:
 class Plan:
     assignments: list = field(default_factory=list)  # list[Assignment]
     year_range: tuple = (1, 3)
+    sci10_section_overrides: dict = field(default_factory=dict)  # "year__season" -> int
 
     def get_assignment(self, course_code: str, year: int, semester: str, section_number: int) -> Optional[Assignment]:
         for a in self.assignments:
@@ -118,6 +119,7 @@ class Plan:
         return {
             "assignments": [a.to_dict() for a in self.assignments],
             "year_range": list(self.year_range),
+            "sci10_section_overrides": self.sci10_section_overrides,
         }
 
     @classmethod
@@ -125,4 +127,5 @@ class Plan:
         return cls(
             assignments=[Assignment.from_dict(a) for a in d.get("assignments", [])],
             year_range=tuple(d.get("year_range", [1, 3])),
+            sci10_section_overrides=d.get("sci10_section_overrides", {}),
         )

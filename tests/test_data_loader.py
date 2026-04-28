@@ -76,6 +76,15 @@ class TestFacultyLoading:
         will = next(f for f in faculty if f.name == "Will")
         assert will.can_teach["sci111"] is True
 
+    def test_missing_history_csv_does_not_raise(self):
+        # _load_teaching_history silently swallows FileNotFoundError; faculty
+        # should still load and every member should get an empty prior count dict.
+        result = load_faculty(history_csv="/nonexistent/teaching_history.csv")
+        assert len(result) > 0
+        assert all(f.prior_teaching_counts == {} for f in result), (
+            "Expected empty prior_teaching_counts when history file is absent"
+        )
+
     def test_prior_counts_has_expected_keys(self, faculty):
         expected = {
             "sci10_health", "sci10_neuro", "sci10_earth",
@@ -93,8 +102,8 @@ class TestCourseLoading:
 
     def test_sci10_sections(self, courses):
         sci10 = courses["sci10"]
-        assert sci10.sections_in("fall") == 8
-        assert sci10.sections_in("spring") == 8
+        assert sci10.sections_in("fall") == 10
+        assert sci10.sections_in("spring") == 10
 
     def test_sci30a_sections(self, courses):
         c = courses["sci30a"]
@@ -123,8 +132,8 @@ class TestCourseLoading:
 
     def test_fall_sections_total(self, courses):
         total = sum(c.sections_in("fall") for c in courses.values())
-        assert total == 26
+        assert total == 28  # sci10 raised from 8→10; other courses unchanged
 
     def test_spring_sections_total(self, courses):
         total = sum(c.sections_in("spring") for c in courses.values())
-        assert total == 26
+        assert total == 28  # sci10 raised from 8→10; other courses unchanged

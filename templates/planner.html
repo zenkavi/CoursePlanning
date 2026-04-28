@@ -113,6 +113,16 @@ async function doSetFlavor(slotId, flavor) {
   if (d.ok) location.reload();
   else alert(d.error || 'Flavor update failed');
 }
+async function doSetSci10Sections(year, season, delta) {
+  const res = await fetch('/set_sci10_sections', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({year, season, delta})
+  });
+  const d = await res.json();
+  if (d.ok) location.reload();
+  else alert(d.error || 'Failed to update section count');
+}
 function collectConfigData() {
   const gf = id => parseFloat(document.getElementById(id).value);
   const gi = id => parseInt(document.getElementById(id).value, 10);
@@ -275,13 +285,23 @@ async function doSaveAndResolve() {
             {% if is_placeholder %}text-slate-400{% else %}text-slate-500{% endif %}">
             {{ course.display_name }}
           </span>
-          {% if is_placeholder %}
-          <span class="text-[9px] px-1 rounded bg-slate-200 text-slate-400">manual</span>
-          {% else %}
-          <span class="text-[9px] px-1 rounded {{ CAT_BADGE.get(course.category, '') }}">
-            {{ CAT_LABEL.get(course.category, '') }}
-          </span>
-          {% endif %}
+          <div class="flex items-center gap-0.5">
+            {% if course.code == "sci10" %}
+            <button onclick="doSetSci10Sections({{ sem.year }}, '{{ sem.season }}', -1)"
+                    title="Remove a SCI 10 section"
+                    class="text-[11px] w-4 h-4 flex items-center justify-center rounded hover:bg-slate-200 text-slate-400 leading-none">−</button>
+            <button onclick="doSetSci10Sections({{ sem.year }}, '{{ sem.season }}', 1)"
+                    title="Add a SCI 10 section"
+                    class="text-[11px] w-4 h-4 flex items-center justify-center rounded hover:bg-slate-200 text-slate-400 leading-none">+</button>
+            {% endif %}
+            {% if is_placeholder %}
+            <span class="text-[9px] px-1 rounded bg-slate-200 text-slate-400">manual</span>
+            {% else %}
+            <span class="text-[9px] px-1 rounded {{ CAT_BADGE.get(course.category, '') }}">
+              {{ CAT_LABEL.get(course.category, '') }}
+            </span>
+            {% endif %}
+          </div>
         </div>
 
         {# ── Section cards ── #}
@@ -313,7 +333,7 @@ async function doSaveAndResolve() {
             {{ FLAVOR_LETTER.get(slot.assignment.flavor, '?') }}
           </span>
           {% endif %}
-          <button onclick="doUnlock({{ slot.slot_id | tojson }})"
+          <button onclick='doUnlock({{ slot.slot_id | tojson }})'
                   title="Click to unlock"
                   class="text-[9px] text-amber-500 hover:text-amber-700 cursor-pointer leading-none">🔒</button>
         </div>
