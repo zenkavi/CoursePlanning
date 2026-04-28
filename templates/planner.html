@@ -333,7 +333,7 @@ async function doSaveAndResolve() {
             {{ FLAVOR_LETTER.get(slot.assignment.flavor, '?') }}
           </span>
           {% endif %}
-          <button onclick="doUnlock({{ slot.slot_id | tojson }})"
+          <button onclick='doUnlock({{ slot.slot_id | tojson }})'
                   title="Click to unlock"
                   class="text-[9px] text-amber-500 hover:text-amber-700 cursor-pointer leading-none">🔒</button>
         </div>
