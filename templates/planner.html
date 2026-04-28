@@ -129,6 +129,10 @@ function collectConfigData() {
   return {
     junior_faculty_hard_cap:          gf('cfg_junior_faculty_hard_cap'),
     senior_faculty_soft_cap:          gf('cfg_senior_faculty_soft_cap'),
+    visiting_faculty_soft_cap:        gf('cfg_visiting_faculty_soft_cap'),
+    visiting_faculty_target_annual:   gf('cfg_visiting_faculty_target_annual'),
+    lab_director_soft_cap:            gf('cfg_lab_director_soft_cap'),
+    lab_director_target_annual:       gf('cfg_lab_director_target_annual'),
     junior_new_lab_preps_per_year_max: gi('cfg_junior_new_lab_preps_per_year_max'),
     new_prep_bonus_count:              gi('cfg_new_prep_bonus_count'),
     new_prep_weight:                   gf('cfg_new_prep_weight'),
@@ -218,9 +222,12 @@ async function doSaveAndResolve() {
        :class='$store.selection.faculty === {{ f.name | tojson }} ? "bg-indigo-50 border-l-2 border-l-indigo-400" : "border-l-2 border-l-transparent"'
        class="block px-3 py-1.5 hover:bg-slate-50 border-b border-slate-50 cursor-pointer">
       <div class="flex items-center gap-2">
-        <span class="shrink-0 w-4 h-4 rounded-full text-[10px] font-bold flex items-center justify-center
-          {% if f.is_junior() %}bg-sky-100 text-sky-700{% else %}bg-slate-200 text-slate-600{% endif %}">
-          {{ "J" if f.is_junior() else "S" }}
+        <span class="shrink-0 min-w-4 h-4 rounded-full px-0.5 text-[9px] font-bold flex items-center justify-center
+          {% if f.is_junior() %}bg-sky-100 text-sky-700
+          {% elif f.is_visiting() %}bg-amber-100 text-amber-700
+          {% elif f.is_lab_director() %}bg-teal-100 text-teal-700
+          {% else %}bg-slate-200 text-slate-600{% endif %}">
+          {{ f.rank_label }}
         </span>
         <span class="truncate text-slate-700 text-xs flex-1">{{ f.name }}</span>
         {% if fv.get('count') %}
@@ -505,10 +512,14 @@ async function doSaveAndResolve() {
              class="mt-0.5 w-full rounded border border-slate-300 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400">
     </label>
     {% endmacro %}
-    {{ cfg_field('cfg_junior_faculty_hard_cap',          'Junior hard cap (per semester)',    cfg.junior_faculty_hard_cap) }}
-    {{ cfg_field('cfg_senior_faculty_soft_cap',          'Senior soft cap (per semester)',    cfg.senior_faculty_soft_cap) }}
-    {{ cfg_field('cfg_junior_new_lab_preps_per_year_max','Junior max new lab preps / year',  cfg.junior_new_lab_preps_per_year_max, step='1') }}
-    {{ cfg_field('cfg_target_annual_load',               'Target annual load',               cfg.target_annual_load) }}
+    {{ cfg_field('cfg_junior_faculty_hard_cap',          'Junior hard cap (per semester)',       cfg.junior_faculty_hard_cap) }}
+    {{ cfg_field('cfg_senior_faculty_soft_cap',          'Senior soft cap (per semester)',       cfg.senior_faculty_soft_cap) }}
+    {{ cfg_field('cfg_visiting_faculty_soft_cap',        'Visiting soft cap (per semester)',     cfg.visiting_faculty_soft_cap) }}
+    {{ cfg_field('cfg_visiting_faculty_target_annual',   'Visiting target annual load',          cfg.visiting_faculty_target_annual) }}
+    {{ cfg_field('cfg_lab_director_soft_cap',            'Lab director soft cap (per semester)', cfg.lab_director_soft_cap) }}
+    {{ cfg_field('cfg_lab_director_target_annual',       'Lab director target annual load',      cfg.lab_director_target_annual) }}
+    {{ cfg_field('cfg_junior_new_lab_preps_per_year_max','Junior max new lab preps / year',      cfg.junior_new_lab_preps_per_year_max, step='1') }}
+    {{ cfg_field('cfg_target_annual_load',               'Junior/Senior target annual load',     cfg.target_annual_load) }}
 
     <div class="text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-2 mt-4">Load Weights</div>
     {{ cfg_field('cfg_new_prep_bonus_count',             'New-prep bonus applies for N teaches', cfg.new_prep_bonus_count, step='1') }}

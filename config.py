@@ -5,6 +5,10 @@ import yaml
 _DEFAULT = {
     "junior_faculty_hard_cap": 2.0,
     "senior_faculty_soft_cap": 2.0,
+    "visiting_faculty_soft_cap": 2.5,
+    "visiting_faculty_target_annual": 5.0,
+    "lab_director_soft_cap": 1.67,
+    "lab_director_target_annual": 3.33,
     "junior_new_lab_preps_per_year_max": 1,
     "new_prep_bonus_count": 2,
     "new_prep_weight": 2.0,

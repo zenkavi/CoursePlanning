@@ -7,7 +7,7 @@ class Faculty:
     name: str
     area: str
     research_method: str
-    rank: str  # "junior" | "senior"
+    rank: str  # "junior" | "senior" | "visiting" | "lab director"
     can_teach: dict = field(default_factory=dict)       # course_code -> bool
     prior_teaching_counts: dict = field(default_factory=dict)  # course_code -> int
     unavailable_semesters: list = field(default_factory=list)  # [(year, semester), ...]
@@ -20,6 +20,20 @@ class Faculty:
 
     def is_senior(self) -> bool:
         return self.rank.lower() == "senior"
+
+    def is_visiting(self) -> bool:
+        return self.rank.lower() == "visiting"
+
+    def is_lab_director(self) -> bool:
+        return self.rank.lower() == "lab director"
+
+    @property
+    def rank_label(self) -> str:
+        if self.is_junior(): return "J"
+        if self.is_senior(): return "S"
+        if self.is_visiting(): return "V"
+        if self.is_lab_director(): return "LD"
+        return self.rank[:2].upper()
 
 
 @dataclass

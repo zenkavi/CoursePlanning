@@ -10,7 +10,7 @@ from openpyxl.styles import Font, PatternFill
 
 from config import load_config
 from data_loader import load_courses, load_faculty
-from load_calc import all_faculty_loads, count_key, new_preps_in_semester
+from load_calc import all_faculty_loads, cap_and_target_per_sem, count_key, new_preps_in_semester
 from models import Assignment, Plan
 from solver import solve as run_solver
 
@@ -53,30 +53,33 @@ def save_plan(plan: Plan):
         json.dump(plan.to_dict(), f, indent=2)
 
 
+_RANK_ORDER = {"junior": 0, "senior": 1, "visiting": 2, "lab director": 3}
+
+
 def compute_violations(faculty_list, loads, plan, courses, cfg) -> dict:
     """Return {faculty_name: {items, has_error, has_warning, count}} for active violations."""
     lab_cats = {"upper_div_lecture_lab", "upper_div_lab"}
-    junior_cap = cfg.get("junior_faculty_hard_cap", 2.0)
-    senior_cap = cfg.get("senior_faculty_soft_cap", 2.0)
 
     result = {}
     for faculty in faculty_list:
         fname = faculty.name
         items = []
+        cap_sem, _ = cap_and_target_per_sem(faculty, cfg)
 
         # ── Semester load cap violations ──────────────────────────────
         for (y, sem), data in loads.get(fname, {}).items():
             total = data.get("total", 0.0)
             label = f"{'Fall' if sem == 'fall' else 'Spring'} Y{y}"
-            if faculty.is_junior() and total > junior_cap:
+            if faculty.is_junior() and total > cap_sem:
                 items.append({
                     "type": "hard_cap", "severity": "error",
-                    "description": f"{label}: load {total:.2f} exceeds junior hard cap ({junior_cap:.1f})",
+                    "description": f"{label}: load {total:.2f} exceeds junior hard cap ({cap_sem:.2f})",
                 })
-            elif faculty.is_senior() and total > senior_cap:
+            elif not faculty.is_junior() and total > cap_sem:
+                rank_display = faculty.rank.title()
                 items.append({
                     "type": "soft_cap", "severity": "warning",
-                    "description": f"{label}: load {total:.2f} exceeds senior soft cap ({senior_cap:.1f})",
+                    "description": f"{label}: load {total:.2f} exceeds {rank_display} soft cap ({cap_sem:.2f})",
                 })
 
         # ── Junior: > 1 new lab prep per academic year ────────────────
@@ -184,10 +187,9 @@ def index():
                 + sems.get((year, "spring"), {}).get("total", 0.0),
                 4,
             )
-            target = cfg.get("target_annual_load", 4.0)
-            hard_cap = cfg.get("junior_faculty_hard_cap", 2.0) * 2
-            soft_cap = cfg.get("senior_faculty_soft_cap", 2.0) * 2
-            cap = hard_cap if (f and f.is_junior()) else soft_cap
+            cap_sem, target_sem = cap_and_target_per_sem(f, cfg) if f else (2.0, 2.0)
+            cap = cap_sem * 2
+            target = target_sem * 2
             if total > cap + 1.0:
                 status = "red"
             elif total > cap:
@@ -315,15 +317,13 @@ def build_diagnostics(plan: Plan) -> dict:
                         "is_placeholder": g["course"].is_placeholder,
                     })
 
-    # 3. Faculty load table — sorted juniors first then seniors, alphabetical within
-    target = cfg.get("target_annual_load", 4.0)
-    hard_cap = cfg.get("junior_faculty_hard_cap", 2.0) * 2
-    soft_cap = cfg.get("senior_faculty_soft_cap", 2.0) * 2
-
+    # 3. Faculty load table — sorted by rank order then alphabetical
     faculty_loads_table = []
-    for f in sorted(faculty_list, key=lambda x: (x.rank, x.name)):
-        row = {"name": f.name, "rank": "J" if f.is_junior() else "S", "area": f.area, "years": {}}
-        cap = hard_cap if f.is_junior() else soft_cap
+    for f in sorted(faculty_list, key=lambda x: (_RANK_ORDER.get(x.rank, 99), x.name)):
+        cap_sem, target_sem = cap_and_target_per_sem(f, cfg)
+        cap = cap_sem * 2
+        target = target_sem * 2
+        row = {"name": f.name, "rank": f.rank_label, "area": f.area, "years": {}}
         for year in range(1, 4):
             fall_t = loads.get(f.name, {}).get((year, "fall"), {}).get("total", 0.0)
             spring_t = loads.get(f.name, {}).get((year, "spring"), {}).get("total", 0.0)
@@ -552,6 +552,8 @@ def update_config():
 
     scalar_keys = [
         "junior_faculty_hard_cap", "senior_faculty_soft_cap",
+        "visiting_faculty_soft_cap", "visiting_faculty_target_annual",
+        "lab_director_soft_cap", "lab_director_target_annual",
         "junior_new_lab_preps_per_year_max", "new_prep_bonus_count",
         "new_prep_weight", "foundational_experienced_weight",
         "extra_section_weight_multiplier", "target_annual_load",
@@ -624,7 +626,7 @@ def export():
         wt = weight_lookup.get((a.faculty_name, a.course_code, a.year, a.semester, a.section_number), {})
         row = [
             a.faculty_name,
-            "J" if (f and f.is_junior()) else "S",
+            f.rank_label if f else "?",
             course.display_name if course else a.course_code,
             a.year,
             a.semester.capitalize(),

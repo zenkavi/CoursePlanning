@@ -162,12 +162,20 @@ def new_preps_in_semester(
     return new
 
 
-def _load_status(total: float, faculty: Faculty, cfg: dict) -> str:
-    hard_cap = cfg.get("junior_faculty_hard_cap", 2.0)
-    soft_cap = cfg.get("senior_faculty_soft_cap", 2.0)
-    target = cfg.get("target_annual_load", 4.0) / 2  # per semester
+def cap_and_target_per_sem(faculty: Faculty, cfg: dict) -> tuple:
+    """Return (cap_per_sem, target_per_sem) for this faculty's rank."""
+    if faculty.is_junior():
+        return cfg.get("junior_faculty_hard_cap", 2.0), cfg.get("target_annual_load", 4.0) / 2
+    if faculty.is_visiting():
+        return cfg.get("visiting_faculty_soft_cap", 2.5), cfg.get("visiting_faculty_target_annual", 5.0) / 2
+    if faculty.is_lab_director():
+        return cfg.get("lab_director_soft_cap", 1.67), cfg.get("lab_director_target_annual", 3.33) / 2
+    # senior (default)
+    return cfg.get("senior_faculty_soft_cap", 2.0), cfg.get("target_annual_load", 4.0) / 2
 
-    cap = hard_cap if faculty.is_junior() else soft_cap
+
+def _load_status(total: float, faculty: Faculty, cfg: dict) -> str:
+    cap, target = cap_and_target_per_sem(faculty, cfg)
 
     if total > cap + 0.5:
         return "red"

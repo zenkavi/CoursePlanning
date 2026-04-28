@@ -2,7 +2,7 @@
 from collections import defaultdict
 from ortools.sat.python import cp_model
 
-from load_calc import count_key, section_weight
+from load_calc import cap_and_target_per_sem, count_key, section_weight
 from models import Assignment
 
 WEIGHT_SCALE = 100
@@ -102,20 +102,21 @@ def solve(faculty_list, courses, plan, cfg, year_range=(1, 3)):
             obj_vars.append(v)
             obj_weights.append(-w_jr)
 
-    # 3. Per-semester load penalties: balance (all faculty) + senior over soft cap.
-    # One total_var per (faculty, year, sem) so both terms share the same aux variable.
-    senior_cap_int = round(cfg.get("senior_faculty_soft_cap", 2.0) * WEIGHT_SCALE)
-    target_per_sem_int = round(cfg.get("target_annual_load", 4.0) / 2 * WEIGHT_SCALE)
+    # 3. Per-semester load penalties: balance (all faculty) + soft cap (non-junior).
+    # cap and target are rank-specific; one total_var per (faculty, year, sem).
     for f in faculty_list:
+        cap_sem, target_sem = cap_and_target_per_sem(f, cfg)
+        cap_int = round(cap_sem * WEIGHT_SCALE)
+        target_int = round(target_sem * WEIGHT_SCALE)
         for year, sem in semesters:
             svars = faculty_sem_vars.get((f.name, year, sem), [])
             if not svars:
                 continue
             existing = _existing_load_int(f, year, sem, plan, courses, pre_counts, cfg)
             max_total = existing + sum(w for w, _ in svars)
-            need_balance = max_total > target_per_sem_int
-            need_sr_cap = f.is_senior() and max_total > senior_cap_int
-            if not need_balance and not need_sr_cap:
+            need_balance = max_total > target_int
+            need_soft_cap = not f.is_junior() and max_total > cap_int
+            if not need_balance and not need_soft_cap:
                 continue
 
             total_var = model.NewIntVar(existing, max_total, f"semload_{f.name}_{year}_{sem}")
@@ -125,15 +126,13 @@ def solve(faculty_list, courses, plan, cfg, year_range=(1, 3)):
                 )
             )
             if need_balance:
-                # over_target = max(0, total - target): penalise overloading any faculty
                 over_target = model.NewIntVar(0, max_total, f"over_target_{f.name}_{year}_{sem}")
-                model.Add(over_target >= total_var - target_per_sem_int)
+                model.Add(over_target >= total_var - target_int)
                 obj_vars.append(over_target)
                 obj_weights.append(-w_balance)
-            if need_sr_cap:
-                # over_cap = max(0, total - senior_cap): additional penalty for seniors
+            if need_soft_cap:
                 over_cap = model.NewIntVar(0, max_total, f"over_cap_{f.name}_{year}_{sem}")
-                model.Add(over_cap >= total_var - senior_cap_int)
+                model.Add(over_cap >= total_var - cap_int)
                 obj_vars.append(over_cap)
                 obj_weights.append(-w_sr_cap)
 
