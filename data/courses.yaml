@@ -3,8 +3,8 @@ courses:
     display_name: "SCI 10"
     category: foundational
     sections_per_semester:
-      fall: 8
-      spring: 8
+      fall: 10
+      spring: 10
     flavors: [health, neuro, earth]
 
   - code: sci30a

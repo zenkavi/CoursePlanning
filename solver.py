@@ -34,7 +34,8 @@ def solve(faculty_list, courses, plan, cfg, year_range=(1, 3)):
         for code, course in courses.items():
             if course.is_placeholder:
                 continue
-            for sec in range(1, course.sections_in(sem) + 1):
+            n = _sci10_slot_count(plan, year, sem, course) if code == "sci10" else course.sections_in(sem)
+            for sec in range(1, n + 1):
                 if plan.get_assignment(code, year, sem, sec) is not None:
                     continue
                 slot_key = (code, year, sem, sec)
@@ -200,6 +201,11 @@ def solve(faculty_list, courses, plan, cfg, year_range=(1, 3)):
         ))
 
     return result
+
+
+def _sci10_slot_count(plan, year, sem, course):
+    key = f"{year}__{sem}"
+    return plan.sci10_section_overrides.get(key, course.sections_in(sem))
 
 
 def _build_pre_counts(faculty_list, courses, plan, semesters):

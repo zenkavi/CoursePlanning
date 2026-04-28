@@ -102,8 +102,8 @@ class TestCourseLoading:
 
     def test_sci10_sections(self, courses):
         sci10 = courses["sci10"]
-        assert sci10.sections_in("fall") == 8
-        assert sci10.sections_in("spring") == 8
+        assert sci10.sections_in("fall") == 10
+        assert sci10.sections_in("spring") == 10
 
     def test_sci30a_sections(self, courses):
         c = courses["sci30a"]
@@ -132,8 +132,8 @@ class TestCourseLoading:
 
     def test_fall_sections_total(self, courses):
         total = sum(c.sections_in("fall") for c in courses.values())
-        assert total == 26
+        assert total == 28  # sci10 raised from 8→10; other courses unchanged
 
     def test_spring_sections_total(self, courses):
         total = sum(c.sections_in("spring") for c in courses.values())
-        assert total == 26
+        assert total == 28  # sci10 raised from 8→10; other courses unchanged
